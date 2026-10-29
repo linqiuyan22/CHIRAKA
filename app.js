@@ -56,7 +56,7 @@ window.CHIRAKA_DATA = DATA;
 const authState = {
   mode: safeStorageGet(STORAGE_AUTH_KEY) === "admin" ? "admin" : "guest",
   getPasscode() {
-    return safeStorageGet(STORAGE_PASS_KEY) || "chiraka888";
+    return safeStorageGet(STORAGE_PASS_KEY) || "";
   },
   setPasscode(newPass) {
     if (newPass && newPass.trim()) {
@@ -2899,7 +2899,7 @@ function openBackupAndSettingsModal() {
         </div>
       </div>
       <div class="form-field span-2" style="padding-top:10px;border-top:1px dashed rgba(255,255,255,0.22)">
-        <label for="new-admin-pass-input">3. 修改管理员登录口令（当前默认：chiraka888）</label>
+        <label for="new-admin-pass-input">3. 修改管理员登录口令（由服务端统一校验）</label>
         <div style="display:flex;gap:10px">
           <input class="form-input" id="new-admin-pass-input" type="text" value="${escapeHtml(authState.getPasscode())}" placeholder="输入新的管理员口令">
           <button class="admin-tool-btn is-gold" type="button" id="save-new-pass-btn" style="flex-shrink:0">保存新口令</button>
