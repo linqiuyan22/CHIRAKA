@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050918">
+  <meta name="description" content="CHIRAKA FM · 城市电台与玻璃黑胶收藏。">
+  <title>CHIRAKA FM · 城市电台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Caveat:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Great+Vibes&family=Kaushan+Script&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-v3.css">
+  <link rel="stylesheet" href="styles-radio-night.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="page-radio" data-page="radio">
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="CHIRAKA 首页">
+      <span class="brand-mark">C<span>+</span></span>
+      <span class="brand-copy">
+        <span class="brand-copy-row"><strong>CHIRAKA</strong><span class="brand-script-sub">Vice Unity</span></span>
+        <small>WEST COAST ARCHIVE · 城市档案</small>
+      </span>
+    </a>
+    <nav class="main-nav top-drawer-nav" aria-label="城市主导航">
+      <a class="nav-drawer-tab" href="index.html" data-theme="home" data-nav-key="home">
+        <span class="nav-tab-top"><span>00</span><span class="nav-tab-script">City Home</span></span>
+        <span class="nav-tab-main"><strong>城市首页</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="characters.html" data-theme="rose" data-nav-key="characters">
+        <span class="nav-tab-top"><span>01</span><span class="nav-tab-script">Characters</span></span>
+        <span class="nav-tab-main"><strong>角色档案</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="news.html" data-theme="peach" data-nav-key="news">
+        <span class="nav-tab-top"><span>02</span><span class="nav-tab-script">City Desk</span></span>
+        <span class="nav-tab-main"><strong>城市新闻</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="gallery.html" data-theme="lilac" data-nav-key="gallery">
+        <span class="nav-tab-top"><span>03</span><span class="nav-tab-script">Gallery</span></span>
+        <span class="nav-tab-main"><strong>插画画廊</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab is-active" href="radio.html" data-theme="aqua" data-nav-key="radio" aria-current="page">
+        <span class="nav-tab-top"><span>04</span><span class="nav-tab-script">FM 88.8</span></span>
+        <span class="nav-tab-main"><strong>城市电台</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+    </nav>
+    <div class="header-tools">
+      <button class="header-auth-btn" id="auth-trigger-btn" type="button" aria-label="切换访客或管理员登录模式">
+        <span class="auth-dot" id="auth-status-dot"></span>
+        <span id="auth-status-text">访客模式 · GUEST</span>
+      </button>
+      <a class="header-radio" href="radio.html" aria-label="打开城市电台">
+        <span class="live-dot"></span><span>FM 88.8</span>
+        <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </a>
+    </div>
+  </header>
+
+    <!-- 管理员顶部工作台控制条 (仅在管理员登录模式下显示) -->
+  <div class="admin-bar" id="admin-bar" role="region" aria-label="管理员工作台">
+    <div class="admin-bar-inner">
+      <div class="admin-bar-status">
+        <span class="admin-badge-pill">✦ ADMIN CLEARANCE</span>
+        <span id="admin-sync-indicator">☁ 数据与框架已分离 · 修改自动同步</span>
+        <button class="admin-pending-pill" id="admin-pending-btn" type="button">📋 待补充项：<b id="admin-pending-count">0</b> 处（点击查看）</button>
+      </div>
+      <div class="admin-bar-actions">
+        <button class="admin-tool-btn is-primary" id="admin-quick-add-btn" type="button">+ 新增内容</button>
+        <button class="admin-tool-btn is-gold" id="admin-backup-btn" type="button">⚙ 数据接口与备份</button>
+        <button class="admin-tool-btn is-danger" id="admin-reset-btn" type="button">↺ 恢复默认</button>
+        <button class="admin-tool-btn" id="admin-logout-btn" type="button">⇄ 切回访客模式</button>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <div class="sona-studio-shell">
+    <div class="radio-neon-diffusion" aria-hidden="true">
+      <span class="neon-orb orb-pink"></span>
+      <span class="neon-orb orb-cyan"></span>
+      <span class="neon-orb orb-violet"></span>
+      <span class="neon-orb orb-coral"></span>
+      <span class="neon-orb orb-rose"></span>
+    </div>
+    <main class="radio-app sona-studio" id="player">
+      <!-- Swirling Musical Staff Ribbon & Glowing Vegas Stars Behind the Glass Turntable -->
+      <svg class="vegas-staff-ribbon" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="staffGradP5" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff7ec4" stop-opacity="0.52"/>
+            <stop offset="50%" stop-color="#80b8ff" stop-opacity="0.46"/>
+            <stop offset="100%" stop-color="#ffc288" stop-opacity="0.52"/>
+          </linearGradient>
+        </defs>
+        <path d="M 680,520 C 780,410 740,160 920,120 C 1060,90 1120,340 1240,210" fill="none" stroke="url(#staffGradP5)" stroke-width="2"/>
+        <path d="M 680,532 C 780,422 740,172 920,132 C 1060,102 1120,352 1240,222" fill="none" stroke="url(#staffGradP5)" stroke-width="1.6"/>
+        <path d="M 680,544 C 780,434 740,184 920,144 C 1060,114 1120,364 1240,234" fill="none" stroke="url(#staffGradP5)" stroke-width="1.6"/>
+        <path d="M 680,556 C 780,446 740,196 920,156 C 1060,126 1120,376 1240,246" fill="none" stroke="url(#staffGradP5)" stroke-width="1.6"/>
+        <polygon class="twinkle-star" style="transform-origin: 815px 133px; animation-duration: 2.6s;" points="815,118 817.5,130.5 830,133 817.5,135.5 815,148 812.5,135.5 800,133 812.5,130.5" fill="#ff7ec4" fill-opacity="0.75"/>
+        <polygon class="twinkle-star" style="transform-origin: 755px 358px; animation-duration: 3.2s; animation-delay: 1.1s;" points="755,345 757,356 768,358 757,360 755,371 753,360 742,358 753,356" fill="#7ef4ff" fill-opacity="0.75"/>
+      </svg>
+
+      <!-- Column 1: Left Sidebar & Station Selector -->
+      <aside class="sona-sidebar" aria-label="唱机控制台侧边栏">
+        <a class="sona-brand" href="index.html" aria-label="回到城市首页">
+          <span class="sona-brand-disc" aria-hidden="true"><span>88</span></span>
+          <span class="sona-brand-copy">
+            <strong>CHIRAKA</strong>
+            <small>VINYL STREAMING</small>
+          </span>
+        </a>
+
+        <div class="vegas-mini-sign" aria-label="Fabulous Las Vegas 电台灯牌">
+          <svg class="vegas-mini-star" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="50,0 59,34 92,18 68,45 100,50 68,55 92,82 59,66 50,100 41,66 8,82 32,55 0,50 32,45 8,18 41,34" fill="#ff7ec4" stroke="#231438" stroke-width="6"/>
+          </svg>
+          <div class="vegas-mini-bulbs" aria-hidden="true">
+            <i>W</i><i>E</i><i>L</i><i>C</i><i>O</i><i>M</i><i>E</i>
+          </div>
+          <span class="vegas-mini-title">Fabulous Chiraka</span>
+          <span class="vegas-mini-sub">LAS VEGAS · FM 88.8</span>
+        </div>
+
+        <nav class="sona-nav" aria-label="唱机导航">
+          <button class="sona-nav-btn is-selected" type="button" data-radio-nav="all"><i>▶</i> <span>正在播放 · Now</span></button>
+          <button class="sona-nav-btn" type="button" data-radio-nav="browse"><i>◈</i> <span>浏览曲目 · Browse</span></button>
+          <button class="sona-nav-btn" type="button" data-radio-nav="fav"><i>♥</i> <span>红心收藏 · Liked</span></button>
+          <button class="sona-nav-btn" type="button" data-radio-nav="charts"><i>✦</i> <span>城市榜单 · Charts</span></button>
+        </nav>
+
+        <div class="sona-side-divider" style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span>CASINO CHIPS · 电台频段</span><button class="admin-edit-chip" id="manage-stations-btn" type="button" style="padding:2px 7px;font-size:10px">⚙ 管理频段</button></div>
+        <div class="sona-playlists" id="sona-station-list" role="group" aria-label="电台频段筛选">
+          <button class="sona-station-btn active" type="button" data-station="all"><span><b class="chip-suit">♠</b>All · 全部频段</span><small>04</small></button>
+          <button class="sona-station-btn" type="button" data-station="vice-unity"><span><b class="chip-suit">♥</b>Vice Unity</span><small>01</small></button>
+          <button class="sona-station-btn" type="button" data-station="sunset-coast"><span><b class="chip-suit">♦</b>Sunset Coast</span><small>02</small></button>
+          <button class="sona-station-btn" type="button" data-station="late-night"><span><b class="chip-suit">♣</b>Late Night</span><small>01</small></button>
+        </div>
+
+        <label class="sona-search-box" aria-label="搜索曲目">
+          <span>⌕</span>
+          <input id="track-search" type="search" placeholder="搜索曲目...">
+        </label>
+      </aside>
+
+      <!-- Column 2: Now Playing & Playlist -->
+      <section class="sona-center" aria-label="当前播放与电台歌单">
+        <div class="sona-card sona-now-card">
+          <div class="sona-now-top">
+            <div class="sona-cover-col">
+              <div class="current-cover">
+                <img id="now-cover-img" src="assets/bg/city-sunset.jpg" alt="当前曲目封面">
+                <button class="cover-replace-btn" id="replace-track-cover-btn" type="button" style="bottom:6px;right:6px;padding:4px 8px;font-size:10px">🖼 换封面</button>
+              </div>
+              <span class="rpm-pill">33⅓ RPM</span>
+            </div>
+
+            <div class="sona-now-Main">
+              <div class="sona-now-kicker" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span id="now-scene">Sunset Blvd</span>
+                <button class="admin-edit-chip" id="edit-current-track-btn" type="button">✎ 编辑当前曲目</button>
+              </div>
+              <h1 id="now-title">曲目 01</h1>
+              <div class="sona-artist-row">
+                <span id="now-artist">CHIRAKA FM</span>
+                <span>·</span>
+                <span id="now-bpm">92 BPM · WEST COAST SYNTH</span>
+              </div>
+
+              <div class="progress-track" id="progress-track" aria-label="点击调整播放进度">
+                <span id="progress-bar"></span>
+              </div>
+              <div class="progress-meta">
+                <span id="time-current">00:00</span>
+                <span id="time-total">03:42</span>
+              </div>
+
+              <div class="radio-controls-main">
+                <button class="ctrl-icon-btn favorite-button" id="fav-btn" type="button" aria-label="收藏当前曲目">♡</button>
+                <button class="ctrl-icon-btn" id="radio-prev" type="button" aria-label="上一首">⏮</button>
+                <button class="radio-play-main" id="radio-play" type="button" aria-label="播放城市电台" aria-pressed="false"><span class="play-glyph" aria-hidden="true"></span></button>
+                <button class="ctrl-icon-btn" id="radio-next" type="button" aria-label="下一首">⏭</button>
+                <button class="ctrl-icon-btn" id="dice-shuffle-btn" type="button" title="摇骰随机切歌" aria-label="摇骰随机切歌">🎲</button>
+                <button class="synth-pill-btn" id="synth-toggle" type="button" aria-label="切换合成器试听">🍸 微醺合成器</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="sona-upnext">
+            <p class="sona-section-label">UP NEXT · 即将播放</p>
+            <button class="upnext-pill" id="upnext-btn" type="button">
+              <img class="upnext-thumb" id="upnext-img" src="assets/bg/city-bridge-reference.jpg" alt="下一首封面">
+              <span class="upnext-copy" id="upnext-title">曲目 02 — CHIRAKA FM</span>
+              <span class="upnext-time" id="upnext-duration">04:15</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sona-card sona-library-card" id="playlist">
+          <p class="sona-section-label">RECENTLY PLAYED · 扑克城市频段</p>
+          <div class="scene-grid" id="scene-grid">
+            <button class="scene-square is-active" type="button" data-scene-track="0">
+              <span class="scene-card-suit">A♥</span>
+              <img src="assets/bg/city-sunset.jpg" alt="曲目 01">
+              <span class="scene-square-overlay"><small>Sunset</small><strong>曲目 01</strong></span>
+            </button>
+            <button class="scene-square" type="button" data-scene-track="1">
+              <span class="scene-card-suit" style="color:#1b2748">K♠</span>
+              <img src="assets/bg/city-bridge-reference.jpg" alt="曲目 02">
+              <span class="scene-square-overlay"><small>Bridge</small><strong>曲目 02</strong></span>
+            </button>
+            <button class="scene-square" type="button" data-scene-track="2">
+              <span class="scene-card-suit">Q♦</span>
+              <img src="assets/bg/city-beach-reference.jpg" alt="曲目 03">
+              <span class="scene-square-overlay"><small>Beach</small><strong>曲目 03</strong></span>
+            </button>
+            <button class="scene-square" type="button" data-scene-track="3">
+              <span class="scene-card-suit" style="color:#1b2748">J♣</span>
+              <img src="assets/bg/city-street.jpg" alt="曲目 04">
+              <span class="scene-square-overlay"><small>Diner</small><strong>曲目 04</strong></span>
+            </button>
+          </div>
+
+          <div class="library-head-row">
+            <p class="sona-section-label" style="margin:0">TRENDING · 歌单精选 (01 / 04)</p>
+            <div style="display:flex;align-items:center;gap:8px"><button class="admin-edit-chip" id="add-track-btn" type="button">+ 新增曲目</button><span style="font:600 15px/1 var(--script-casual);color:#cf2e78">Fabulous Vegas Nights</span></div>
+          </div>
+          <ol class="full-playlist" id="full-playlist"></ol>
+        </div>
+      </section>
+
+      <!-- Column 3: Glass Vinyl Turntable Stage -->
+      <aside class="sona-vinyl-stage record-stage" aria-label="玻璃质感黑胶唱机舞台">
+        <div class="vinyl-panel-top">
+          <span>SUMMER ON THE RADIO</span>
+          <span>33⅓ RPM · STEREO</span>
+        </div>
+
+        <div class="ambient-field" aria-hidden="true">
+          <div class="ambient-blob blob-one"></div>
+          <div class="ambient-blob blob-two"></div>
+          <div class="ambient-blob blob-three"></div>
+        </div>
+
+        <div class="record-artwork">
+          <!-- 唱片左上角题字（与下方铭牌左边缘对齐） -->
+          <div class="stage-corner-note">
+            <span class="sc-kicker"><i aria-hidden="true"></i>NIGHT SESSION · FM 88.8</span>
+            <span class="sc-title">CITY NIGHT</span>
+            <span class="sc-sub">NIGHT ARCHIVE · FM 88.8</span>
+            <span class="sc-meta"><span class="sc-stars">★★★★☆</span>VICE UNITY · WEST COAST</span>
+          </div>
+          <!-- ANIMATED NEON WAVES, TWINKLING STARS & VISUAL SOUNDWAVE GRAPHICS -->
+          <svg class="gta-vegas-stage-svg" viewBox="0 0 518 572" preserveAspectRatio="xMinYMid meet" aria-hidden="true">
+            <defs>
+              <filter id="subtleNeonGlow" x="-35%" y="-35%" width="170%" height="170%">
+                <feGaussianBlur stdDeviation="2.2" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <linearGradient id="rimAccentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff6eb8"/>
+                <stop offset="50%" stop-color="#ffd166"/>
+                <stop offset="100%" stop-color="#2ce5ff"/>
+              </linearGradient>
+              <linearGradient id="waveFlowGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ff4f9d" stop-opacity="0.15"/>
+                <stop offset="45%" stop-color="#ff7ec4" stop-opacity="0.75"/>
+                <stop offset="85%" stop-color="#2ce5ff" stop-opacity="0.65"/>
+                <stop offset="100%" stop-color="#2ce5ff" stop-opacity="0.1"/>
+              </linearGradient>
+              <linearGradient id="waveFlowGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#2ce5ff" stop-opacity="0.12"/>
+                <stop offset="50%" stop-color="#7ef4ff" stop-opacity="0.68"/>
+                <stop offset="85%" stop-color="#ffd166" stop-opacity="0.58"/>
+                <stop offset="100%" stop-color="#ff6eb8" stop-opacity="0.1"/>
+              </linearGradient>
+            </defs>
+
+            <!-- 1. ANIMATED FLOWING NEON WAVE RIBBONS (动态起伏+流光穿梭的霓虹波浪线) -->
+            <g class="neon-wave-group" filter="url(#subtleNeonGlow)">
+              <!-- Soft background wave tracks -->
+              <path class="wave-ribbon wave-r1" d="M -20,390 C 65,365 95,210 190,175 C 275,145 320,235 420,120" fill="none" stroke="url(#waveFlowGrad1)" stroke-width="1.8"/>
+              <path class="wave-ribbon wave-r2" d="M -20,408 C 72,382 102,226 198,190 C 282,160 328,248 430,134" fill="none" stroke="url(#waveFlowGrad2)" stroke-width="1.4"/>
+              <path class="wave-ribbon wave-r3" d="M -20,426 C 80,398 110,242 206,205 C 290,175 335,262 440,148" fill="none" stroke="url(#waveFlowGrad1)" stroke-width="1.2"/>
+
+              <!-- Animated glowing energy streams flowing along the waves -->
+              <path class="wave-stream stream-s1" d="M -20,390 C 65,365 95,210 190,175 C 275,145 320,235 420,120" fill="none" stroke="#ff9cd8" stroke-width="2.4" stroke-linecap="round"/>
+              <path class="wave-stream stream-s2" d="M -20,408 C 72,382 102,226 198,190 C 282,160 328,248 430,134" fill="none" stroke="#7ef4ff" stroke-width="2.0" stroke-linecap="round"/>
+
+              <!-- Secondary gentle sine wave in mid-left -->
+              <path class="wave-ribbon wave-r4" d="M 10,268 Q 58,238 106,268 T 202,268 T 298,268" fill="none" stroke="url(#waveFlowGrad2)" stroke-width="1.3" stroke-dasharray="5 5"/>
+            </g>
+
+            <!-- 2. ANIMATED TWINKLING STARS & MICRO-GLINTS (动态闪烁呼吸的星星与稀碎闪光) -->
+            <g class="micro-glints-group" filter="url(#subtleNeonGlow)">
+              <g class="twinkle-star" style="transform-origin: 82px 349px; animation-delay: 3.42s; animation-duration: 3.09s;"><polygon points="82,343.5 82.99,348.01 87.5,349 82.99,349.99 82,354.5 81.01,349.99 76.5,349 81.01,348.01" fill="#ffffff"/><circle cx="82" cy="349" r="0.88" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="136" cy="452" r="2.1" fill="#ffffff" style="transform-origin: 136px 452px; animation-delay: 1.97s; animation-duration: 3.26s;"/>
+              <circle class="twinkle-dot" cx="406" cy="473" r="1.7" fill="#ff85c8" style="transform-origin: 406px 473px; animation-delay: 0.01s; animation-duration: 1.96s;"/>
+              <circle class="twinkle-dot" cx="440" cy="122" r="2.1" fill="#ffe699" style="transform-origin: 440px 122px; animation-delay: 0.04s; animation-duration: 3.58s;"/>
+              <g class="twinkle-star" style="transform-origin: 369px 343px; animation-delay: 1.43s; animation-duration: 2.5s;"><polygon points="369,333.5 370.71,341.29 378.5,343 370.71,344.71 369,352.5 367.29,344.71 359.5,343 367.29,341.29" fill="#ff85c8"/><circle cx="369" cy="343" r="1.52" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="434" cy="407" r="1.0" fill="#ffffff" style="transform-origin: 434px 407px; animation-delay: 2.3s; animation-duration: 3.25s;"/>
+              <circle class="twinkle-dot" cx="307" cy="321" r="1.7" fill="#7ef4ff" style="transform-origin: 307px 321px; animation-delay: 1.65s; animation-duration: 3.55s;"/>
+              <circle class="twinkle-dot" cx="34" cy="399" r="2.1" fill="#7ef4ff" style="transform-origin: 34px 399px; animation-delay: 1.66s; animation-duration: 1.98s;"/>
+              <g class="twinkle-star" style="transform-origin: 466px 141px; animation-delay: 1.82s; animation-duration: 3.3s;"><polygon points="466,129.5 468.07,138.93 477.5,141 468.07,143.07 466,152.5 463.93,143.07 454.5,141 463.93,138.93" fill="#ffe699"/><circle cx="466" cy="141" r="1.84" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="225" cy="286" r="1.0" fill="#ffe699" style="transform-origin: 225px 286px; animation-delay: 2.03s; animation-duration: 3.76s;"/>
+              <circle class="twinkle-dot" cx="316" cy="251" r="1.0" fill="#ff85c8" style="transform-origin: 316px 251px; animation-delay: 2.95s; animation-duration: 3.73s;"/>
+              <circle class="twinkle-dot" cx="389" cy="461" r="1.0" fill="#ffe699" style="transform-origin: 389px 461px; animation-delay: 0.51s; animation-duration: 3.57s;"/>
+              <g class="twinkle-star" style="transform-origin: 342px 489px; animation-delay: 2.57s; animation-duration: 3.72s;"><polygon points="342,479.5 343.71,487.29 351.5,489 343.71,490.71 342,498.5 340.29,490.71 332.5,489 340.29,487.29" fill="#ffe699"/><circle cx="342" cy="489" r="1.52" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="308" cy="433" r="2.1" fill="#7ef4ff" style="transform-origin: 308px 433px; animation-delay: 1.97s; animation-duration: 3.09s;"/>
+              <circle class="twinkle-dot" cx="434" cy="433" r="1.0" fill="#ffe699" style="transform-origin: 434px 433px; animation-delay: 0.73s; animation-duration: 3.46s;"/>
+              <circle class="twinkle-dot" cx="38" cy="175" r="2.1" fill="#ffffff" style="transform-origin: 38px 175px; animation-delay: 3.46s; animation-duration: 3.41s;"/>
+              <g class="twinkle-star" style="transform-origin: 206px 226px; animation-delay: 2.49s; animation-duration: 2.73s;"><polygon points="206,214.5 208.07,223.93 217.5,226 208.07,228.07 206,237.5 203.93,228.07 194.5,226 203.93,223.93" fill="#7ef4ff"/><circle cx="206" cy="226" r="1.84" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="435" cy="466" r="1.7" fill="#ffffff" style="transform-origin: 435px 466px; animation-delay: 2.39s; animation-duration: 1.87s;"/>
+              <circle class="twinkle-dot" cx="184" cy="490" r="1.7" fill="#ffffff" style="transform-origin: 184px 490px; animation-delay: 1.58s; animation-duration: 3.23s;"/>
+              <circle class="twinkle-dot" cx="253" cy="209" r="1.0" fill="#ffe699" style="transform-origin: 253px 209px; animation-delay: 3.03s; animation-duration: 2.76s;"/>
+              <g class="twinkle-star" style="transform-origin: 354px 294px; animation-delay: 1.33s; animation-duration: 2.19s;"><polygon points="354,282.5 356.07,291.93 365.5,294 356.07,296.07 354,305.5 351.93,296.07 342.5,294 351.93,291.93" fill="#ffe699"/><circle cx="354" cy="294" r="1.84" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="96" cy="482" r="1.0" fill="#ffffff" style="transform-origin: 96px 482px; animation-delay: 0.33s; animation-duration: 2.7s;"/>
+              <circle class="twinkle-dot" cx="334" cy="225" r="1.7" fill="#ff85c8" style="transform-origin: 334px 225px; animation-delay: 0.43s; animation-duration: 1.89s;"/>
+              <circle class="twinkle-dot" cx="364" cy="387" r="2.1" fill="#ff85c8" style="transform-origin: 364px 387px; animation-delay: 0.02s; animation-duration: 3.13s;"/>
+              <g class="twinkle-star" style="transform-origin: 375px 160px; animation-delay: 0.8s; animation-duration: 2.98s;"><polygon points="375,150.5 376.71,158.29 384.5,160 376.71,161.71 375,169.5 373.29,161.71 365.5,160 373.29,158.29" fill="#ffffff"/><circle cx="375" cy="160" r="1.52" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="65" cy="449" r="1.7" fill="#ff85c8" style="transform-origin: 65px 449px; animation-delay: 3.37s; animation-duration: 3.37s;"/>
+              <circle class="twinkle-dot" cx="281" cy="443" r="1.3" fill="#ffe699" style="transform-origin: 281px 443px; animation-delay: 2.91s; animation-duration: 2.84s;"/>
+              <circle class="twinkle-dot" cx="214" cy="36" r="1.7" fill="#ffffff" style="transform-origin: 214px 36px; animation-delay: 1.4s; animation-duration: 1.95s;"/>
+              <g class="twinkle-star" style="transform-origin: 352px 383px; animation-delay: 0.09s; animation-duration: 2.75s;"><polygon points="352,373.5 353.71,381.29 361.5,383 353.71,384.71 352,392.5 350.29,384.71 342.5,383 350.29,381.29" fill="#ffffff"/><circle cx="352" cy="383" r="1.52" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="252" cy="355" r="1.3" fill="#ffffff" style="transform-origin: 252px 355px; animation-delay: 1.79s; animation-duration: 2.73s;"/>
+              <circle class="twinkle-dot" cx="100" cy="233" r="1.3" fill="#ffe699" style="transform-origin: 100px 233px; animation-delay: 2.24s; animation-duration: 2.72s;"/>
+              <circle class="twinkle-dot" cx="369" cy="93" r="1.3" fill="#ffffff" style="transform-origin: 369px 93px; animation-delay: 1.44s; animation-duration: 2.19s;"/>
+              <g class="twinkle-star" style="transform-origin: 60px 205px; animation-delay: 3.13s; animation-duration: 3.08s;"><polygon points="60,193.5 62.07,202.93 71.5,205 62.07,207.07 60,216.5 57.93,207.07 48.5,205 57.93,202.93" fill="#ffe699"/><circle cx="60" cy="205" r="1.84" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="386" cy="42" r="1.3" fill="#ff85c8" style="transform-origin: 386px 42px; animation-delay: 2.32s; animation-duration: 2.24s;"/>
+              <circle class="twinkle-dot" cx="104" cy="212" r="1.0" fill="#ffe699" style="transform-origin: 104px 212px; animation-delay: 0.98s; animation-duration: 2.87s;"/>
+              <circle class="twinkle-dot" cx="218" cy="334" r="2.1" fill="#ff85c8" style="transform-origin: 218px 334px; animation-delay: 1.24s; animation-duration: 2.33s;"/>
+              <g class="twinkle-star" style="transform-origin: 421px 447px; animation-delay: 1.68s; animation-duration: 2.45s;"><polygon points="421,435.5 423.07,444.93 432.5,447 423.07,449.07 421,458.5 418.93,449.07 409.5,447 418.93,444.93" fill="#7ef4ff"/><circle cx="421" cy="447" r="1.84" fill="#ffffff"/></g>
+              <circle class="twinkle-dot" cx="249" cy="144" r="1.0" fill="#ffffff" style="transform-origin: 249px 144px; animation-delay: 2.87s; animation-duration: 3.39s;"/>
+            </g>
+
+            <!-- 3. OUTER DISC RIM ORBIT ARCS & HERO TWINKLING STARS (贴合 520px 大唱片外沿的星轨弧线与闪耀十字星) -->
+            <!-- Disc center is at (458, 286), disc R=260, orbit ring R=276 -->
+            <path class="rim-pulse-arc" d="M 326,38 A 282,282 0 0,0 176,286 A 282,282 0 0,0 326,534" fill="none" stroke="rgba(44, 229, 255, 0.32)" stroke-width="1.1" stroke-dasharray="12 8 3 8"/>
+            <path class="rim-pulse-arc-2" d="M 338,26 A 292,292 0 0,0 166,286 A 292,292 0 0,0 338,546" fill="none" stroke="rgba(255, 110, 184, 0.24)" stroke-width="0.9" stroke-dasharray="4 10"/>
+
+            <!-- Hero Animated 4-Point Diamond Star on Upper-Left Rim -->
+            <g class="hero-star-pulse" transform="translate(206, 128)" filter="url(#subtleNeonGlow)">
+              <circle class="star-halo-ring" cx="0" cy="0" r="14" fill="none" stroke="rgba(126, 244, 255, 0.45)" stroke-width="0.9" stroke-dasharray="4 3"/>
+              <polygon points="0,-22 2.4,-2.4 22,0 2.4,2.4 0,22 -2.4,2.4 -22,0 -2.4,-2.4" fill="url(#rimAccentGrad)"/>
+              <polygon points="0,-10 1.2,-1.2 10,0 1.2,1.2 0,10 -1.2,1.2 -10,0 -1.2,-1.2" fill="#ffffff"/>
+            </g>
+
+            <!-- Secondary Hero Animated Star on Lower-Left Rim -->
+            <g class="hero-star-pulse-delayed" transform="translate(196, 422)" filter="url(#subtleNeonGlow)">
+              <polygon points="0,-15 1.7,-1.7 15,0 1.7,1.7 0,15 -1.7,1.7 -15,0 -1.7,-1.7" fill="url(#rimAccentGrad)"/>
+              <circle cx="0" cy="0" r="2" fill="#ffffff"/>
+            </g>
+
+            <!-- 5. MID-LEFT FLOATING CONSTELLATION & SOUND NODES (中段梦幻星座连线与发光音符节点) -->
+            <g class="constellation-group" transform="translate(34, 232)" filter="url(#subtleNeonGlow)">
+              <polyline points="0,32 38,12 82,26 118,4" fill="none" stroke="rgba(126, 244, 255, 0.35)" stroke-width="0.9" stroke-dasharray="3 3"/>
+              <circle class="twinkle-dot" cx="0" cy="32" r="2.2" fill="#7ef4ff" style="transform-origin: 0px 32px; animation-duration: 2.2s;"/>
+              <circle class="twinkle-dot" cx="38" cy="12" r="2.6" fill="#ff7ec4" style="transform-origin: 38px 12px; animation-duration: 2.8s;"/>
+              <circle class="twinkle-dot" cx="82" cy="26" r="2.2" fill="#ffd166" style="transform-origin: 82px 26px; animation-duration: 2.0s;"/>
+              <g class="twinkle-star" style="transform-origin: 118px 4px; animation-duration: 2.5s;">
+                <polygon points="118,-5 119.5,2.5 127,4 119.5,5.5 118,13 116.5,5.5 109,4 116.5,2.5" fill="#ffffff"/>
+              </g>
+            </g>
+
+            <!-- 6. Lower-Left Visual Element: Animated Neon Soundwave Card -->
+            <g transform="translate(24, 422) rotate(-1.5)">
+              <rect x="0" y="0" width="162" height="66" rx="10" fill="rgba(20, 8, 38, 0.72)" stroke="rgba(255, 118, 188, 0.52)" stroke-width="1.1"/>
+              <rect x="3" y="3" width="156" height="60" rx="7.5" fill="none" stroke="rgba(44, 229, 255, 0.22)" stroke-width="0.7"/>
+
+              <!-- Left Mini Spinning Vinyl Emblem -->
+              <g transform="translate(26, 33)">
+                <circle class="astro-ring-cw" cx="0" cy="0" r="16" fill="rgba(255, 78, 162, 0.18)" stroke="#ff7ec4" stroke-width="1" stroke-dasharray="6 3"/>
+                <circle cx="0" cy="0" r="10" fill="none" stroke="rgba(44, 229, 255, 0.55)" stroke-width="0.8"/>
+                <circle cx="0" cy="0" r="3.5" fill="#ffd166"/>
+              </g>
+
+              <!-- Right Script & Animated Star Accent -->
+              <text x="52" y="26" font-family="'Alex Brush', 'Great Vibes', Georgia, serif" font-style="italic" font-size="20" font-weight="700" fill="#ff7ec4" filter="url(#subtleNeonGlow)">Chiraka</text>
+              <g class="twinkle-star" style="transform-origin: 142px 19px; animation-duration: 2.1s;">
+                <polygon points="142,12 143.4,17.6 149,19 143.4,20.4 142,26 140.6,20.4 135,19 140.6,17.6" fill="#7ef4ff"/>
+              </g>
+
+              <!-- Animated Neon Heartbeat / Soundwave Curve -->
+              <path class="card-wave-pulse" d="M 52,40 L 68,40 L 73,31 L 79,48 L 85,28 L 91,45 L 96,35 L 101,42 L 107,40 L 148,40" fill="none" stroke="url(#rimAccentGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#subtleNeonGlow)"/>
+
+              <!-- Intuitive Chinese Sub-caption -->
+              <text x="52" y="55" font-family="'Noto Sans SC', 'DM Sans', sans-serif" font-size="6.5" font-weight="500" fill="rgba(255, 225, 245, 0.72)" letter-spacing="2.2">✦ 午夜霓虹 · 城市电台</text>
+            </g>
+
+            <!-- Bottom Visual Element: Animated Star-Trail & Neon Audio Pulse Nodes -->
+            <g transform="translate(28, 508)" filter="url(#subtleNeonGlow)">
+              <line x1="0" y1="0" x2="54" y2="0" stroke="url(#waveFlowGrad1)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <g class="twinkle-star" style="transform-origin: 68px 0px; animation-duration: 2.3s;">
+                <polygon points="68,-8 69.5,-1.5 76,0 69.5,1.5 68,8 66.5,1.5 60,0 66.5,-1.5" fill="#ffd166"/>
+              </g>
+              <circle class="twinkle-dot" cx="86" cy="0" r="2" fill="#7ef4ff" style="transform-origin: 86px 0px; animation-duration: 1.9s;"/>
+              <line x1="96" y1="0" x2="148" y2="0" stroke="url(#waveFlowGrad2)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <g class="twinkle-star" style="transform-origin: 158px 0px; animation-duration: 2.7s; animation-delay: -1.1s;">
+                <polygon points="158,-6 159.2,-1.2 164,0 159.2,1.2 158,6 156.8,1.2 152,0 156.8,-1.2" fill="#ff7ec4"/>
+              </g>
+            </g>
+          </svg>
+
+          <div class="tonearm-assembly" aria-hidden="true">
+            <span class="tonearm-pivot"></span>
+            <span class="tonearm-arm"></span>
+            <span class="tonearm-head"></span>
+          </div>
+
+          <div class="vinyl-orbit-ring" aria-hidden="true">
+            <span class="vinyl-orbit-dot"></span>
+          </div>
+
+          <div class="vinyl-disc-wrapper">
+            <div class="vinyl-shadow" aria-hidden="true"></div>
+            <div class="vinyl vinyl-real" id="vinyl" aria-label="旋转的玻璃质感黑胶唱片">
+              <div class="record-grooves" aria-hidden="true"></div>
+            </div>
+            <div class="vinyl-center-hub" aria-hidden="true">
+              <span class="vinyl-hub-ring-text">CHIRAKA · 88.8</span>
+              <div class="vinyl-eq-bars">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <span class="vinyl-hub-ring-text">VICE UNITY</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vinyl-panel-bottom">
+          <span>CHIRAKA RECORD CLUB</span>
+          <span id="vinyl-time-display">00:00 / 03:42</span>
+        </div>
+      </aside>
+
+      <div class="sona-bottom-bar">
+        <div class="sona-user-chip">
+          <span class="sona-user-avatar">C</span>
+          <span>CHIRAKA FM · 88.8 FABULOUS VEGAS STEREO</span>
+        </div>
+        <div class="sona-volume-box">
+          <span>🔊</span>
+          <input class="sona-volume-slider" id="volume-slider" type="range" min="0" max="100" value="75" aria-label="电台音量">
+        </div>
+      </div>
+    </main>
+  </div>
+
+    <!-- 1. 访客 / 管理员通行证登录切换弹窗 -->
+  <dialog class="chiraka-modal modal-narrow" id="auth-dialog" aria-labelledby="auth-dialog-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow">ACCESS TERMINAL // WCPD-88 ARCHIVE</p>
+          <h2 id="auth-dialog-title">城市档案通行证 · 模式切换</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭登录窗口">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="auth-mode-grid">
+          <div class="auth-card guest-card" id="auth-guest-card">
+            <div>
+              <span class="auth-card-tag">GUEST PASS · 访客通道</span>
+              <h3>访客浏览模式</h3>
+              <p>无需通行口令，以沉浸式只读视角浏览 CHIRAKA 城市首页、人物卷宗、新闻剪报、插画画廊与 FM 88.8 黑胶电台，自动隐藏所有编辑按钮。</p>
+            </div>
+            <button class="button button-ghost" id="switch-guest-btn" type="button" style="justify-content:center;width:100%"><span>进入访客浏览模式</span><b>→</b></button>
+          </div>
+
+          <div class="auth-card admin-card" id="auth-admin-card">
+            <div>
+              <span class="auth-card-tag">ADMIN CLEARANCE · 档案管理员</span>
+              <h3>管理员编辑模式</h3>
+              <p>验证管理员口令后，可在线修改所有「待补充」设定文案、增删角色与新闻报道、上传立绘与电台音频，并支持一键导出最新 <code>data.js</code>。</p>
+              <div class="form-field" style="margin-top:12px">
+                <label for="admin-pass-input">
+                  <span>管理员通行口令</span>
+                  <button type="button" id="fill-default-pass-btn" style="color:var(--gold);font-size:11px;text-decoration:underline">填入默认: chiraka888</button>
+                </label>
+                <input class="form-input" id="admin-pass-input" type="password" placeholder="请输入管理员口令 (默认 chiraka888)" autocomplete="off">
+                <small id="auth-error-msg" style="color:#ff5c8a;font-weight:700;min-height:16px"></small>
+              </div>
+            </div>
+            <button class="button button-primary" id="login-admin-btn" type="button" style="justify-content:center;width:100%"><span>验证并开启管理员模式</span><b>✦</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 2. 管理员通用内容编辑器弹窗 (支持首页、角色、新闻、画廊、电台曲目) -->
+  <dialog class="chiraka-modal" id="editor-dialog" aria-labelledby="editor-dialog-title">
+    <form class="modal-shell" id="editor-form" method="dialog">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow" id="editor-dialog-kicker">ARCHIVE EDITOR // ADMIN CLEARANCE</p>
+          <h2 id="editor-dialog-title">编辑档案内容</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭编辑器">×</button>
+      </header>
+      <div class="modal-body" id="editor-form-body"></div>
+      <footer class="modal-foot">
+        <div id="editor-foot-left"></div>
+        <div style="display:flex;gap:10px;margin-left:auto">
+          <button class="button button-ghost" type="button" data-close-dialog>取消</button>
+          <button class="button button-primary" id="editor-save-btn" type="submit"><span>保存修改</span><b>✓</b></button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 3. 待补充清单 / 数据备份导入 / 密码修改 / 确认重置弹窗 -->
+  <dialog class="chiraka-modal" id="data-dialog" aria-labelledby="data-dialog-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow" id="data-dialog-kicker">ARCHIVE DATA CENTER // WCPD-88</p>
+          <h2 id="data-dialog-title">档案数据管理与待补充清单</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭数据中心">×</button>
+      </header>
+      <div class="modal-body" id="data-dialog-body"></div>
+      <footer class="modal-foot">
+        <span style="font-size:12px;color:rgba(255,235,245,0.7)">提示：所有修改会自动保存在浏览器本地，也可随时导出为 data.js 覆盖原文件。</span>
+        <button class="button button-ghost" type="button" data-close-dialog>关闭窗口</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,953 @@
+/* ==========================================================================
+   城市电台 · 暗夜霓虹紫玫调与动态霓虹弥散 × 梦幻透明玻璃唱片
+   ========================================================================== */
+
+body.page-radio {
+  --rv-bg: #110722;
+  --rv-pink: #ff388c;
+  --rv-coral: #ff884b;
+  --rv-cyan: #2ce5ff;
+  --rv-violet: #9d4edd;
+  --rv-gold: #ffbe55;
+  --rv-text: #f9f2fc;
+  --rv-muted: rgba(242, 224, 252, 0.72);
+  --rv-r: 12px;
+  color: var(--rv-text);
+  background: #07030f;
+}
+
+/* 1. 压暗的夜景城市虚影底图 */
+body.page-radio::before {
+  content: "";
+  position: fixed;
+  inset: -6%;
+  z-index: -2;
+  background: url("assets/bg/city-street.jpg") center / cover no-repeat;
+  filter: blur(1.5px) saturate(1.45) brightness(0.66) contrast(1.12);
+  opacity: 1;
+  transform: scale(1.06);
+  animation: rvPan 32s ease-in-out infinite alternate;
+}
+
+/* 2. 暗夜紫玫与青色霓虹弥散光晕 */
+body.page-radio::after {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(45% 42% at 18% 22%, rgba(255, 56, 140, 0.40), transparent 70%),
+    radial-gradient(42% 40% at 84% 20%, rgba(44, 229, 255, 0.30), transparent 70%),
+    radial-gradient(50% 48% at 62% 54%, rgba(157, 78, 221, 0.38), transparent 72%),
+    radial-gradient(40% 36% at 75% 84%, rgba(255, 136, 75, 0.28), transparent 70%),
+    linear-gradient(180deg, rgba(8, 3, 20, 0.52) 0%, rgba(18, 6, 34, 0.26) 50%, rgba(4, 2, 12, 0.74) 100%);
+  animation: rvBloom 14s ease-in-out infinite alternate;
+}
+
+@keyframes rvBloom {
+  0%   { transform: translate3d(-4%, -3%, 0) scale(1) rotate(0deg); }
+  50%  { transform: translate3d(4%, 3%, 0) scale(1.12) rotate(2.5deg); }
+  100% { transform: translate3d(-3%, 4%, 0) scale(1.06) rotate(-2deg); }
+}
+@keyframes rvPan {
+  0%   { transform: scale(1.06) translate3d(0, 0, 0); }
+  100% { transform: scale(1.12) translate3d(-2.5%, -1.2%, 0); }
+}
+
+/* 动态柔和霓虹弥散特效光球 (Floating Soft Neon Diffusion Orbs) */
+.radio-neon-diffusion {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.neon-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(52px) saturate(1.2);
+  opacity: 0.80;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+.neon-orb.orb-pink {
+  width: 450px;
+  height: 450px;
+  top: 2%;
+  left: 4%;
+  background: radial-gradient(circle, rgba(255, 56, 140, 0.88) 0%, rgba(255, 56, 140, 0) 70%);
+  animation: neonDriftA 8s ease-in-out infinite alternate;
+}
+.neon-orb.orb-cyan {
+  width: 430px;
+  height: 430px;
+  top: 6%;
+  right: 4%;
+  background: radial-gradient(circle, rgba(44, 229, 255, 0.82) 0%, rgba(44, 229, 255, 0) 70%);
+  animation: neonDriftB 10s ease-in-out infinite alternate;
+}
+.neon-orb.orb-violet {
+  width: 520px;
+  height: 520px;
+  bottom: -8%;
+  left: 26%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.78) 0%, rgba(168, 85, 247, 0) 70%);
+  animation: neonDriftC 9s ease-in-out infinite alternate;
+}
+.neon-orb.orb-coral {
+  width: 390px;
+  height: 390px;
+  bottom: 2%;
+  right: 6%;
+  background: radial-gradient(circle, rgba(255, 136, 75, 0.76) 0%, rgba(255, 136, 75, 0) 70%);
+  animation: neonDriftA 7.5s ease-in-out infinite alternate-reverse;
+}
+.neon-orb.orb-rose {
+  width: 360px;
+  height: 360px;
+  top: 38%;
+  left: 46%;
+  background: radial-gradient(circle, rgba(255, 110, 199, 0.70) 0%, rgba(255, 110, 199, 0) 70%);
+  animation: neonDriftB 6.8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes neonDriftA {
+  0%   { transform: translate3d(0, 0, 0) scale(0.9); opacity: 0.45; }
+  50%  { transform: translate3d(85px, 48px, 0) scale(1.16); opacity: 0.76; }
+  100% { transform: translate3d(-55px, 90px, 0) scale(1.04); opacity: 0.56; }
+}
+@keyframes neonDriftB {
+  0%   { transform: translate3d(0, 0, 0) scale(0.92); opacity: 0.48; }
+  50%  { transform: translate3d(-95px, 60px, 0) scale(1.18); opacity: 0.78; }
+  100% { transform: translate3d(55px, -65px, 0) scale(1.05); opacity: 0.54; }
+}
+@keyframes neonDriftC {
+  0%   { transform: translate3d(0, 0, 0) scale(0.88); opacity: 0.44; }
+  50%  { transform: translate3d(70px, -70px, 0) scale(1.2); opacity: 0.74; }
+  100% { transform: translate3d(-80px, -30px, 0) scale(1.02); opacity: 0.52; }
+}
+
+/* 顶栏：深邃暗夜紫晶玻璃顶栏 + 亮青色电台激活抽屉 */
+.page-radio .site-header {
+  background: linear-gradient(180deg, rgba(18, 8, 34, 0.92) 0%, rgba(30, 12, 52, 0.86) 100%);
+  border-bottom: 1.5px solid rgba(255, 88, 168, 0.48);
+  box-shadow: 0 12px 34px rgba(5, 2, 14, 0.62);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+.page-radio .nav-drawer-tab {
+  background: rgba(44, 20, 72, 0.72);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 240, 250, 0.88);
+}
+.page-radio .nav-drawer-tab.is-active {
+  background: linear-gradient(180deg, #e8fbff 0%, #ffffff 100%);
+  border-color: #fff;
+  color: #16102c;
+  box-shadow: 0 -6px 22px rgba(44, 229, 255, 0.38);
+}
+.page-radio .nav-drawer-tab.is-active strong {
+  color: #16102c;
+}
+.page-radio .nav-drawer-tab.is-active .nav-tab-top {
+  color: #009bb8;
+}
+.page-radio .header-radio {
+  background: rgba(34, 15, 58, 0.85);
+  border: 1.5px solid rgba(255, 88, 168, 0.55);
+  color: #fff !important;
+  border-radius: 999px;
+  box-shadow: 0 0 18px rgba(255, 56, 140, 0.28);
+}
+
+/* 3. 电台主唱机台：紫玫波点网格 + 高透雾面玻璃 */
+.page-radio .radio-app.sona-studio {
+  position: relative;
+  z-index: 2;
+  border: 1.5px solid rgba(255, 118, 188, 0.62);
+  border-radius: 20px;
+  background:
+    radial-gradient(rgba(255, 150, 210, 0.18) 1px, transparent 1px),
+    radial-gradient(85% 75% at 78% 48%, rgba(255, 56, 140, 0.30), transparent 64%),
+    radial-gradient(75% 70% at 24% 82%, rgba(44, 229, 255, 0.20), transparent 64%),
+    linear-gradient(145deg, rgba(54, 20, 84, 0.64) 0%, rgba(32, 12, 56, 0.56) 55%, rgba(60, 22, 90, 0.62) 100%);
+  background-size: 18px 18px, 100% 100%, 100% 100%, 100% 100%;
+  box-shadow:
+    0 34px 90px rgba(3, 2, 12, 0.78),
+    0 0 70px rgba(255, 56, 140, 0.34),
+    0 0 110px rgba(44, 229, 255, 0.22),
+    inset 0 1px 1px rgba(255, 210, 238, 0.58),
+    inset 0 0 48px rgba(255, 78, 162, 0.20);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+/* 左栏：深黑紫磨砂玻璃侧栏 + 霓虹灯牌 */
+.page-radio .sona-sidebar {
+  background: linear-gradient(180deg, rgba(16, 7, 30, 0.72) 0%, rgba(12, 5, 24, 0.78) 100%);
+  border-right: 1px solid rgba(255, 118, 188, 0.28);
+}
+
+.page-radio .sona-brand {
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+.page-radio .sona-brand-disc {
+  border-color: var(--rv-pink);
+  box-shadow: 0 0 16px rgba(255, 56, 140, 0.48);
+}
+.page-radio .sona-brand-disc span {
+  background: linear-gradient(135deg, var(--rv-pink), var(--rv-coral));
+}
+.page-radio .sona-brand-copy strong { color: #fff; }
+.page-radio .sona-brand-copy small { color: var(--rv-cyan); }
+
+.page-radio .vegas-mini-sign {
+  background: linear-gradient(160deg, rgba(38, 14, 62, 0.78), rgba(22, 8, 40, 0.84));
+  border: 1.5px solid rgba(255, 98, 176, 0.72);
+  box-shadow:
+    0 8px 22px rgba(255, 56, 140, 0.28),
+    inset 0 0 16px rgba(255, 56, 140, 0.22);
+}
+.page-radio .vegas-mini-sign::before {
+  border-color: rgba(255, 230, 245, 0.78);
+}
+.page-radio .vegas-mini-bulbs {
+  background: linear-gradient(90deg, var(--rv-pink), var(--rv-coral));
+}
+.page-radio .vegas-mini-bulbs i {
+  background: #140826;
+  color: #fff;
+}
+.page-radio .vegas-mini-title {
+  color: #ff7ec4;
+  text-shadow: 0 0 12px rgba(255, 56, 140, 0.75);
+}
+.page-radio .vegas-mini-sub {
+  color: var(--rv-cyan);
+}
+
+.page-radio .sona-nav-btn {
+  color: rgba(246, 232, 255, 0.78);
+  border-radius: 999px;
+}
+.page-radio .sona-nav-btn i { color: var(--rv-pink); }
+.page-radio .sona-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.page-radio .sona-nav-btn.is-selected {
+  background: linear-gradient(90deg, #ff3385 0%, #ff8b4d 100%);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(255, 56, 140, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.page-radio .sona-nav-btn.is-selected i { color: #fff; }
+
+.page-radio .sona-side-divider {
+  border-top-color: rgba(255, 255, 255, 0.14);
+  color: rgba(242, 224, 252, 0.62);
+}
+
+.page-radio .sona-station-btn {
+  color: rgba(246, 232, 255, 0.76);
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.page-radio .sona-station-btn b.chip-suit {
+  color: var(--rv-pink);
+}
+.page-radio .sona-station-btn:hover,
+.page-radio .sona-station-btn.active {
+  background: rgba(44, 229, 255, 0.12);
+  color: var(--rv-cyan);
+  border: 1px solid rgba(44, 229, 255, 0.62);
+  box-shadow: 0 0 16px rgba(44, 229, 255, 0.2);
+}
+.page-radio .sona-station-btn.active b.chip-suit {
+  color: var(--rv-cyan);
+}
+
+.page-radio .sona-search-box {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--rv-muted);
+  border-radius: 10px;
+}
+.page-radio .sona-search-box input { color: #fff; }
+.page-radio .sona-search-box input::placeholder { color: rgba(242, 224, 252, 0.48); }
+
+/* 中部卡片：半透明暗紫玫毛玻璃卡片 + 细亮粉发光边 */
+.page-radio .sona-card {
+  border: 1px solid rgba(255, 110, 188, 0.36);
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(36, 13, 58, 0.54) 0%, rgba(22, 8, 38, 0.44) 100%);
+  box-shadow:
+    0 14px 32px rgba(6, 3, 18, 0.42),
+    inset 0 1px 0 rgba(255, 210, 238, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.page-radio .sona-now-kicker { color: #ff85bc; }
+.page-radio .sona-now-Main h1 { color: #ffffff; }
+.page-radio .sona-artist-row { color: rgba(242, 224, 252, 0.72); }
+
+.page-radio .current-cover {
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 56, 140, 0.28);
+}
+.page-radio .rpm-pill {
+  border: 1px solid rgba(44, 229, 255, 0.52);
+  background: rgba(44, 229, 255, 0.12);
+  color: var(--rv-cyan);
+  border-radius: 999px;
+}
+
+.page-radio .progress-track {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+.page-radio #progress-bar {
+  background: linear-gradient(90deg, var(--rv-pink), var(--rv-coral) 50%, var(--rv-cyan));
+  box-shadow: 0 0 14px rgba(44, 229, 255, 0.55);
+  border-radius: 999px;
+}
+.page-radio .progress-meta { color: rgba(242, 224, 252, 0.76); }
+
+.page-radio .ctrl-icon-btn {
+  color: #f6ecfa;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.page-radio .ctrl-icon-btn:hover,
+.page-radio .ctrl-icon-btn.is-favorite {
+  background: linear-gradient(135deg, var(--rv-pink), var(--rv-coral));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 0 18px rgba(255, 56, 140, 0.55);
+}
+
+/* 播放/暂停主按钮：
+   未播放（暂停状态）显示三角形 ▶；正在播放 (.is-playing) 显示双竖线 ❚❚！ */
+.page-radio .radio-play-main {
+  background: linear-gradient(135deg, #ff3385 0%, #ff8b4d 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(255, 56, 140, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.play-glyph {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+.play-glyph::before {
+  content: "";
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-left: 11px solid currentColor;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  background: none;
+}
+.radio-play-main.is-playing .play-glyph::before {
+  width: 11px;
+  height: 13px;
+  margin-left: 0;
+  border: 0;
+  background: linear-gradient(90deg,
+    currentColor 0 3.5px,
+    transparent 3.5px 7.5px,
+    currentColor 7.5px 11px);
+}
+
+.page-radio .synth-pill-btn {
+  background: rgba(44, 229, 255, 0.1);
+  border: 1px solid rgba(44, 229, 255, 0.58);
+  color: var(--rv-cyan);
+}
+.page-radio .synth-pill-btn:hover,
+.page-radio .synth-pill-btn.is-active {
+  background: linear-gradient(135deg, var(--rv-cyan), #4d8bff);
+  color: #0e0720;
+  font-weight: 700;
+  border-color: transparent;
+  box-shadow: 0 0 18px rgba(44, 229, 255, 0.48);
+}
+
+.page-radio .sona-section-label { color: rgba(255, 230, 246, 0.82); }
+.page-radio .sona-upnext { border-top-color: rgba(255, 255, 255, 0.14); }
+
+.page-radio .upnext-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-radius: 10px;
+}
+.page-radio .upnext-pill:hover {
+  background: rgba(255, 56, 140, 0.18);
+  border-color: rgba(255, 56, 140, 0.48);
+}
+.page-radio .upnext-time { color: var(--rv-gold); }
+
+.page-radio .scene-square {
+  border: 1.5px solid rgba(255, 255, 255, 0.32);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+.page-radio .scene-square:hover,
+.page-radio .scene-square.is-active {
+  border-color: var(--rv-cyan);
+  box-shadow: 0 0 20px rgba(44, 229, 255, 0.48);
+}
+.page-radio .scene-square-overlay {
+  background: linear-gradient(180deg, rgba(8, 6, 20, 0.04) 18%, rgba(8, 6, 20, 0.84) 100%);
+}
+.page-radio .scene-square-overlay small { color: var(--rv-cyan); }
+
+.page-radio .full-track {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 10px;
+}
+.page-radio .full-track:hover,
+.page-radio .full-track.is-current {
+  background: linear-gradient(90deg, rgba(255, 56, 140, 0.28), rgba(157, 78, 221, 0.22));
+  border-color: rgba(255, 88, 168, 0.72);
+  box-shadow: 0 4px 18px rgba(255, 56, 140, 0.22);
+}
+.page-radio .full-track-copy strong { color: #fff; }
+.page-radio .full-track-copy small { color: rgba(242, 224, 252, 0.68); }
+.page-radio .full-track-state {
+  background: rgba(255, 56, 140, 0.18);
+  border: 1px solid rgba(255, 110, 188, 0.45);
+  color: #ffb8dc;
+  border-radius: 999px;
+}
+.page-radio .full-track-thumb { border-radius: 6px; }
+.page-radio .full-track-rank { color: var(--rv-cyan); }
+
+/* 4. 右侧舞台：动态呼吸霓虹弥散团 + 青色星轨 + 高透玻璃唱片 */
+.page-radio .sona-vinyl-stage {
+  background:
+    radial-gradient(72% 62% at 74% 48%, rgba(255, 56, 140, 0.22), transparent 70%),
+    radial-gradient(60% 52% at 88% 80%, rgba(44, 229, 255, 0.18), transparent 70%);
+}
+.page-radio .vinyl-panel-top,
+.page-radio .vinyl-panel-bottom {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--rv-gold);
+}
+
+/* 唱片左上角题字：左对齐，与下方铭牌同一左边缘（绝对定位，不影响排版） */
+.page-radio .stage-corner-note {
+  position: absolute;
+  left: 26px;
+  top: 34px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+.page-radio .sc-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 9px/1 var(--body);
+  letter-spacing: 0.22em;
+  color: #ffa8d4;
+  text-shadow: 0 0 9px rgba(255, 110, 180, 0.9), 0 0 20px rgba(255, 110, 180, 0.5);
+}
+.page-radio .sc-kicker i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ff388c;
+  box-shadow: 0 0 8px #ff388c, 0 0 16px rgba(255, 56, 140, 0.7);
+}
+.page-radio .sc-title {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: 0.055em;
+  text-align: left;
+  margin-left: -3px;
+  transform: none;
+  color: transparent;
+  background-image: linear-gradient(178deg, #fff2f9 0%, #ffc4e2 38%, #ff8ecb 72%, #ff6fb8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(255, 168, 214, 0.95))
+          drop-shadow(0 0 22px rgba(255, 106, 176, 0.75))
+          drop-shadow(0 0 46px rgba(255, 106, 176, 0.45));
+}
+.page-radio .sc-sub {
+  font: 500 9px/1 var(--body);
+  letter-spacing: 0.24em;
+  color: #b9f7ff;
+  text-shadow: 0 0 10px rgba(110, 236, 255, 0.9), 0 0 24px rgba(44, 229, 255, 0.55);
+}
+.page-radio .sc-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 8.5px/1 var(--body);
+  letter-spacing: 0.2em;
+  color: rgba(255, 244, 224, 0.72);
+}
+.page-radio .sc-stars {
+  letter-spacing: 0.12em;
+  color: #ffcf5c;
+  text-shadow: 0 0 8px rgba(255, 207, 92, 0.7);
+}
+
+.page-radio .ambient-blob { filter: blur(46px); opacity: 0.56; will-change: transform, opacity; }
+.page-radio .blob-one {
+  background: radial-gradient(circle, rgba(255, 56, 140, 0.92), transparent 70%);
+  animation: neonDriftA 6.5s ease-in-out infinite alternate;
+}
+.page-radio .blob-two {
+  background: radial-gradient(circle, rgba(44, 229, 255, 0.88), transparent 70%);
+  animation: neonDriftB 8s ease-in-out infinite alternate;
+}
+.page-radio .blob-three {
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.88), transparent 70%);
+  animation: neonDriftC 7s ease-in-out infinite alternate;
+}
+body.page-radio.radio-playing .ambient-blob { opacity: 0.78; }
+
+.page-radio .vinyl-orbit-ring {
+  border-color: rgba(44, 229, 255, 0.58);
+  box-shadow: 0 0 26px rgba(44, 229, 255, 0.28);
+}
+.page-radio .vinyl-orbit-dot {
+  background: #140826;
+  border: 2.5px solid var(--rv-cyan);
+  box-shadow: 0 0 14px var(--rv-cyan), 0 0 0 3px rgba(44, 229, 255, 0.25);
+}
+
+@media (min-width: 1121px) {
+  .page-radio .vinyl-disc-wrapper {
+    width: 620px;
+    height: 620px;
+    right: -252px;
+  }
+  .page-radio .vinyl-orbit-ring {
+    width: 540px;
+    height: 540px;
+    right: -212px;
+  }
+}
+
+.page-radio .vinyl.vinyl-real {
+  border: 2px solid rgba(255, 230, 248, 0.68);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.36), transparent 28%),
+    conic-gradient(from 20deg,
+      rgba(255, 56, 140, 0.28),
+      rgba(44, 229, 255, 0.28) 20%,
+      rgba(255, 255, 255, 0.20) 34%,
+      rgba(157, 78, 221, 0.26) 50%,
+      rgba(255, 255, 255, 0.14) 64%,
+      rgba(255, 136, 75, 0.24) 80%,
+      rgba(255, 56, 140, 0.28)),
+    rgba(22, 10, 40, 0.22);
+  box-shadow:
+    0 20px 50px rgba(4, 2, 14, 0.55),
+    0 0 54px rgba(255, 56, 140, 0.32),
+    0 0 90px rgba(44, 229, 255, 0.24),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.42),
+    inset 0 0 38px rgba(255, 120, 196, 0.26);
+  backdrop-filter: blur(2.5px) saturate(165%);
+  -webkit-backdrop-filter: blur(2.5px) saturate(165%);
+}
+.page-radio .vinyl.vinyl-real::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg,
+      transparent 0 24%,
+      rgba(255, 255, 255, 0.28) 36%,
+      transparent 48% 72%,
+      rgba(44, 229, 255, 0.22) 84%,
+      transparent 100%);
+  mix-blend-mode: screen;
+}
+.page-radio .vinyl.vinyl-real::before {
+  position: absolute;
+  top: 7.5%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  content: "";
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.85);
+  transform: translateX(-50%);
+}
+
+.page-radio .record-grooves {
+  border: 0;
+  background:
+    repeating-radial-gradient(circle at center,
+      rgba(255, 240, 250, 0.14) 0 1px,
+      transparent 1px 6px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 0 0 46px rgba(255, 120, 196, 0.08);
+}
+.page-radio .record-grooves::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: 50%;
+  background: linear-gradient(116deg, transparent 26%, rgba(255, 255, 255, 0.28) 44%, transparent 60%);
+  mix-blend-mode: screen;
+}
+
+.page-radio .vinyl-center-hub {
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 160, 214, 0.52), rgba(114, 34, 104, 0.72) 48%, rgba(34, 14, 56, 0.84) 100%);
+  border: 2px solid rgba(255, 180, 224, 0.78);
+  box-shadow:
+    inset 0 3px 16px rgba(255, 255, 255, 0.35),
+    0 0 0 6px rgba(255, 88, 168, 0.22),
+    0 0 32px rgba(255, 56, 140, 0.45);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+}
+.page-radio .vinyl-hub-ring-text { color: #fff; }
+.page-radio .vinyl-eq-bars i {
+  background: linear-gradient(180deg, var(--rv-cyan), var(--rv-pink) 52%, var(--rv-coral));
+  box-shadow: 0 0 10px rgba(255, 136, 75, 0.65);
+}
+
+.page-radio .tonearm-pivot { background: radial-gradient(circle at 32% 30%, #fff, #ffd4ea 48%, #9c4878 90%); }
+.page-radio .tonearm-arm { background: linear-gradient(90deg, #ffffff, #ffd6ec 55%, #b86b98); }
+.page-radio .tonearm-head {
+  background: linear-gradient(180deg, var(--rv-pink), #9c1f5b);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.page-radio .record-annotation {
+  color: #ff6eb8;
+  text-shadow: 0 0 16px rgba(255, 56, 140, 0.65);
+}
+
+.page-radio .vinyl-left-dock {
+  position: absolute;
+  left: 10px;
+  bottom: 14px;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.vegas-record-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px 7px 8px;
+  border: 1.5px solid rgba(255, 118, 188, 0.72);
+  border-radius: 9px;
+  background:
+    radial-gradient(90% 120% at 16% 18%, rgba(255, 56, 140, 0.30), transparent 62%),
+    linear-gradient(160deg, rgba(40, 14, 66, 0.92), rgba(14, 5, 28, 0.94));
+  box-shadow:
+    0 8px 22px rgba(255, 56, 140, 0.22),
+    inset 0 0 16px rgba(255, 56, 140, 0.16);
+  pointer-events: none;
+  transform: rotate(-2deg);
+}
+.vegas-badge-graffiti {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  filter: drop-shadow(0 0 10px rgba(255, 56, 140, 0.6));
+}
+.vegas-badge-graffiti path,
+.vegas-badge-graffiti circle {
+  fill: none;
+  stroke: #ff4f9d;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.vegas-badge-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  line-height: 1.15;
+}
+.vegas-badge-kicker {
+  font: 800 5.5px/1.2 var(--body);
+  letter-spacing: 0.22em;
+  color: rgba(255, 226, 242, 0.68);
+}
+.vegas-badge-script {
+  font: 700 18px/1.15 var(--script-en);
+  color: #ff7ec4;
+  text-shadow: 0 0 12px rgba(255, 56, 140, 0.55);
+}
+.vegas-badge-sub {
+  font: 700 5.5px/1.2 var(--body);
+  letter-spacing: 0.14em;
+  color: var(--rv-cyan);
+}
+@media (max-width: 1120px) {
+  .page-radio .vinyl-left-dock {
+    left: 6px;
+    bottom: 8px;
+  }
+  .page-radio .vegas-record-badge {
+    transform: rotate(-2deg) scale(0.88);
+    transform-origin: left bottom;
+  }
+}
+
+.page-radio .edge-bubble-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #fff;
+  border-radius: 10px;
+}
+.page-radio .edge-bubble-btn:hover,
+.page-radio .edge-bubble-btn.is-active {
+  background: linear-gradient(135deg, var(--rv-pink), var(--rv-coral));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 18px rgba(255, 56, 140, 0.52);
+}
+
+.page-radio .sona-bottom-bar {
+  background: linear-gradient(90deg, rgba(16, 7, 30, 0.78), rgba(28, 11, 48, 0.72) 52%, rgba(16, 7, 30, 0.78));
+  border-top: 1px solid rgba(255, 118, 188, 0.28);
+  color: rgba(246, 232, 255, 0.85);
+}
+.page-radio .sona-user-avatar { background: linear-gradient(135deg, var(--rv-pink), var(--rv-coral)); }
+.page-radio .sona-volume-slider { accent-color: var(--rv-pink); }
+.page-radio #time-total { color: #fff; }
+
+
+/* ==========================================================================
+   LARGER 520PX HALF-BLEED GLASS VINYL + ANIMATED WAVES & TWINKLING STARS
+   ========================================================================== */
+.page-radio .sona-vinyl-stage {
+  padding: 14px 22px 50px !important;
+  overflow: hidden;
+}
+
+.page-radio .record-artwork {
+  position: relative;
+  width: calc(100% + 44px) !important;
+  margin-left: -22px !important;
+  margin-right: -22px !important;
+  min-height: 460px;
+  overflow: hidden;
+}
+
+.gta-vegas-stage-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@media (min-width: 1121px) {
+  /* 唱片放大至 520px，靠右无缝对齐半露，同时在 572px 舞台内上下依然保留约 26px 呼吸空隙 */
+  .page-radio .vinyl-disc-wrapper {
+    width: 520px !important;
+    height: 520px !important;
+    right: -200px !important;
+    left: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 4 !important;
+  }
+
+  /* 外圈青色星轨同步放大至 552px (552px > 520px)，环绕在唱片外侧 */
+  .page-radio .vinyl-orbit-ring {
+    width: 552px !important;
+    height: 552px !important;
+    right: -216px !important;
+    left: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 3 !important;
+  }
+
+  /* 唱臂对应 520px 大唱片精准落针 */
+  .page-radio .tonearm-assembly {
+    top: 16px !important;
+    right: 58px !important;
+    left: auto !important;
+    z-index: 9 !important;
+  }
+}
+
+/* 1. 波浪线动态起伏与流光穿梭动画 (Animated Wavy Lines) */
+.vegas-staff-ribbon path {
+  stroke-dasharray: 260 40;
+  animation: staffWaveFlow 8s linear infinite, staffWaveFloat 5s ease-in-out infinite alternate;
+}
+
+.wave-ribbon {
+  animation: waveUndulate 4.8s ease-in-out infinite alternate;
+}
+.wave-ribbon.wave-r2 {
+  animation-duration: 5.6s;
+  animation-delay: -1.4s;
+}
+.wave-ribbon.wave-r3 {
+  animation-duration: 6.4s;
+  animation-delay: -2.8s;
+}
+.wave-ribbon.wave-r4 {
+  stroke-dashoffset: 0;
+  animation: dashMarch 6s linear infinite, waveUndulate 4.2s ease-in-out infinite alternate;
+}
+
+/* 沿着波浪线穿梭的高亮流光束 */
+.wave-stream {
+  stroke-dasharray: 70 380;
+  animation: streamShoot 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite, waveUndulate 4.8s ease-in-out infinite alternate;
+}
+.wave-stream.stream-s2 {
+  stroke-dasharray: 55 400;
+  animation: streamShoot 5.2s cubic-bezier(0.4, 0, 0.2, 1) infinite -2.1s, waveUndulate 5.6s ease-in-out infinite alternate -1.4s;
+}
+
+@keyframes staffWaveFlow {
+  0% { stroke-dashoffset: 600; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes staffWaveFloat {
+  0% { transform: translateY(-4px); }
+  100% { transform: translateY(5px); }
+}
+@keyframes waveUndulate {
+  0% { transform: translateY(-5px) scaleY(0.98); }
+  50% { transform: translateY(3px) scaleY(1.02); }
+  100% { transform: translateY(6px) scaleY(0.99); }
+}
+@keyframes streamShoot {
+  0% { stroke-dashoffset: 450; opacity: 0.2; }
+  30% { opacity: 0.95; }
+  70% { opacity: 0.95; }
+  100% { stroke-dashoffset: -450; opacity: 0.2; }
+}
+@keyframes dashMarch {
+  0% { stroke-dashoffset: 60; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* 2. 星星与稀碎微光动态闪烁呼吸动画 (Twinkling Stars & Glints) */
+.twinkle-star {
+  animation: starTwinklePulse 2.6s ease-in-out infinite alternate;
+}
+.twinkle-dot {
+  animation: dotShimmer 2.4s ease-in-out infinite alternate;
+}
+.hero-star-pulse {
+  animation: heroStarBreathe 2.8s ease-in-out infinite alternate;
+}
+.hero-star-pulse-delayed {
+  animation: heroStarBreathe 3.2s ease-in-out infinite alternate -1.5s;
+}
+.star-halo-ring {
+  transform-origin: 0px 0px;
+  animation: spinSlowCW 12s linear infinite;
+}
+
+@keyframes starTwinklePulse {
+  0% { opacity: 0.18; transform: scale(0.55) rotate(-8deg); }
+  50% { opacity: 0.95; transform: scale(1.12) rotate(0deg); }
+  100% { opacity: 0.32; transform: scale(0.75) rotate(8deg); }
+}
+@keyframes dotShimmer {
+  0% { opacity: 0.15; transform: scale(0.6); }
+  60% { opacity: 0.92; transform: scale(1.35); }
+  100% { opacity: 0.28; transform: scale(0.8); }
+}
+@keyframes heroStarBreathe {
+  0% { opacity: 0.55; transform: translate(206px, 128px) scale(0.82); }
+  100% { opacity: 1; transform: translate(206px, 128px) scale(1.15); }
+}
+.hero-star-pulse-delayed {
+  animation-name: heroStarBreathe2;
+}
+@keyframes heroStarBreathe2 {
+  0% { opacity: 0.45; transform: translate(196px, 422px) scale(0.78); }
+  100% { opacity: 0.98; transform: translate(196px, 422px) scale(1.18); }
+}
+.astro-ring-cw ~ .hero-star-pulse {
+  animation: centerStarPulse 2.2s ease-in-out infinite alternate;
+}
+@keyframes centerStarPulse {
+  0% { opacity: 0.6; transform: scale(0.82); }
+  100% { opacity: 1; transform: scale(1.18); }
+}
+
+/* 3. 左上星盘旋转与霓虹音柱律动 + 左下声波脉冲动画 */
+.astro-ring-cw {
+  transform-origin: 0px 0px;
+  animation: spinSlowCW 18s linear infinite;
+}
+.astro-ring-ccw {
+  transform-origin: 0px 0px;
+  animation: spinSlowCCW 14s linear infinite;
+}
+@keyframes spinSlowCW {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes spinSlowCCW {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+.eq-bar-svg {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: svgEqBounce 1.1s ease-in-out infinite alternate;
+}
+.eq-bar-svg.b1 { animation-duration: 0.85s; }
+.eq-bar-svg.b2 { animation-duration: 1.15s; animation-delay: -0.3s; }
+.eq-bar-svg.b3 { animation-duration: 0.95s; animation-delay: -0.6s; }
+.eq-bar-svg.b4 { animation-duration: 1.25s; animation-delay: -0.2s; }
+.eq-bar-svg.b5 { animation-duration: 0.78s; animation-delay: -0.5s; }
+.eq-bar-svg.b6 { animation-duration: 1.05s; animation-delay: -0.8s; }
+
+@keyframes svgEqBounce {
+  0% { transform: scaleY(0.35); opacity: 0.65; }
+  100% { transform: scaleY(1.08); opacity: 1; }
+}
+
+.card-wave-pulse {
+  stroke-dasharray: 140;
+  animation: waveHeartbeat 2.8s ease-in-out infinite;
+}
+@keyframes waveHeartbeat {
+  0% { stroke-dashoffset: 140; opacity: 0.45; }
+  50% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -140; opacity: 0.45; }
+}
+
+.rim-pulse-arc {
+  animation: dashMarch 10s linear infinite;
+}
+.rim-pulse-arc-2 {
+  animation: dashMarch 14s linear infinite reverse;
+}

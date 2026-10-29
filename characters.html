@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#120b24">
+  <meta name="description" content="CHIRAKA 角色档案：按分类筛选人物，查看独立档案、设定信息与关系网。">
+  <title>角色档案 · CHIRAKA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Caveat:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Great+Vibes&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-v3.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="page-characters" data-page="characters">
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="page-noise" aria-hidden="true"></div>
+  <!-- 角色档案专属：背景两侧的旧案证据板（纸张、照片、地图碎片与红线） -->
+  <div class="crime-archive-wall" aria-hidden="true">
+    <svg class="crime-wall-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <filter id="crimePaperShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+        </filter>
+        <pattern id="crimeMapGrid" width="18" height="18" patternUnits="userSpaceOnUse">
+          <path d="M 18 0 L 0 0 0 18" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="1"/>
+        </pattern>
+      </defs>
+
+          <g class="crime-wing-left" transform="translate(16, 25) scale(0.82)">
+      <!-- LEFT: case file board -->
+      <g transform="rotate(-4 110 180)" filter="url(#crimePaperShadow)">
+        <rect x="10" y="120" width="210" height="140" rx="3" fill="#e8dcc4" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.24" stroke-width="1.2"/>
+        <text x="24" y="148" font-size="10" letter-spacing="2" fill="#f3dfc4" fill-opacity="0.72" font-family="DM Sans, monospace">CASE FILE // 01</text>
+        <text x="24" y="170" font-size="9" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.5" font-family="DM Sans, monospace">SUBJECT: CHIRAKA</text>
+        <text x="24" y="188" font-size="9" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.5" font-family="DM Sans, monospace">STATUS: OPEN</text>
+        <text x="24" y="206" font-size="9" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.5" font-family="DM Sans, monospace">UNIT: WCPD 88</text>
+        <rect x="18" y="224" width="150" height="20" fill="none" stroke="#ff2448" stroke-opacity="0.3" stroke-width="1"/>
+        <text x="93" y="238" text-anchor="middle" font-size="14" letter-spacing="2" fill="#ff2448" fill-opacity="0.35" font-family="DM Sans, monospace">CONFIDENTIAL</text>
+      </g>
+
+      <!-- LEFT: evidence photo -->
+      <g transform="rotate(5 90 320)" filter="url(#crimePaperShadow)">
+        <rect x="18" y="280" width="146" height="98" rx="2" fill="#f4ecdd" fill-opacity="0.86"/>
+        <image x="25" y="287" width="132" height="74" href="assets/bg/city-street.jpg" preserveAspectRatio="none" opacity="0.72"/>
+        <text x="30" y="370" font-size="7" letter-spacing="1.2" fill="#2a1a2a" fill-opacity="0.75" font-family="DM Sans, monospace">SUNSET BLVD · 88.8</text>
+      </g>
+
+      <!-- LEFT: tape + index card -->
+      <rect x="128" y="116" width="64" height="16" fill="#f3dfc4" fill-opacity="0.18" transform="rotate(-10 160 124)"/>
+      <rect x="140" y="376" width="50" height="14" fill="#f3dfc4" fill-opacity="0.16" transform="rotate(8 165 383)"/>
+      <g transform="rotate(-3 145 455)" filter="url(#crimePaperShadow)">
+        <rect x="105" y="420" width="112" height="74" rx="2" fill="#e8dcc4" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+        <text x="116" y="444" font-size="9" letter-spacing="1.5" fill="#f3dfc4" fill-opacity="0.6" font-family="DM Sans, monospace">EVIDENCE</text>
+        <text x="116" y="464" font-size="8" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.42" font-family="DM Sans, monospace">BAG 02 / SEALED</text>
+        <text x="116" y="482" font-size="8" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.42" font-family="DM Sans, monospace">88.8 FM</text>
+      </g>
+
+      <!-- LEFT: map fragment -->
+      <g transform="rotate(2 100 625)" filter="url(#crimePaperShadow)">
+        <rect x="8" y="540" width="190" height="150" fill="#1a1830" fill-opacity="0.38" stroke="#ffffff" stroke-opacity="0.14"/>
+        <image x="14" y="546" width="178" height="138" href="assets/bg/city-bridge-reference.jpg" preserveAspectRatio="none" opacity="0.32"/>
+        <rect x="14" y="546" width="178" height="138" fill="url(#crimeMapGrid)"/>
+        <text x="22" y="570" font-size="8" letter-spacing="1.4" fill="#f3dfc4" fill-opacity="0.55" font-family="DM Sans, monospace">RIVER / LOWER PARK</text>
+        <text x="22" y="668" font-size="7" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.4" font-family="DM Sans, monospace">PLATE V · 1936</text>
+      </g>
+
+      <!-- LEFT: red thread + pins -->
+      <line x1="20" y1="126" x2="8" y2="300" stroke="#ff2448" stroke-opacity="0.72" stroke-width="1.4"/>
+      <line x1="8" y1="300" x2="96" y2="300" stroke="#ff2448" stroke-opacity="0.6" stroke-width="1.2"/>
+      <line x1="96" y1="300" x2="168" y2="440" stroke="#ff2448" stroke-opacity="0.6" stroke-width="1.2"/>
+      <line x1="168" y1="440" x2="72" y2="570" stroke="#ff2448" stroke-opacity="0.55" stroke-width="1.2" stroke-dasharray="4 5"/>
+      <circle cx="20" cy="126" r="4.5" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+      <circle cx="96" cy="300" r="4" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+      <circle cx="168" cy="440" r="4" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+      <circle cx="72" cy="570" r="4" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+
+          </g>
+    <g class="crime-wing-right" transform="translate(245, 25) scale(0.82)">
+      <!-- RIGHT: person-of-interest board -->
+      <g transform="rotate(4 1354 180)" filter="url(#crimePaperShadow)">
+        <rect x="1244" y="120" width="196" height="140" rx="3" fill="#e8dcc4" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.24" stroke-width="1.2"/>
+        <text x="1258" y="148" font-size="10" letter-spacing="2" fill="#f3dfc4" fill-opacity="0.72" font-family="DM Sans, monospace">EVID // 02</text>
+        <text x="1258" y="170" font-size="9" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.5" font-family="DM Sans, monospace">PERSON OF INTEREST</text>
+        <text x="1258" y="188" font-size="9" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.5" font-family="DM Sans, monospace">STATUS: UNKNOWN</text>
+        <text x="1258" y="206" font-size="9" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.5" font-family="DM Sans, monospace">LAST SEEN: FM 88.8</text>
+        <rect x="1252" y="224" width="150" height="20" fill="none" stroke="#ff2448" stroke-opacity="0.3" stroke-width="1"/>
+        <text x="1327" y="238" text-anchor="middle" font-size="14" letter-spacing="2" fill="#ff2448" fill-opacity="0.35" font-family="DM Sans, monospace">INVESTIGATE</text>
+      </g>
+
+      <!-- RIGHT: evidence photo -->
+      <g transform="rotate(-5 1344 330)" filter="url(#crimePaperShadow)">
+        <rect x="1274" y="280" width="142" height="98" rx="2" fill="#f4ecdd" fill-opacity="0.86"/>
+        <image x="1281" y="287" width="128" height="74" href="assets/bg/city-beach-reference.jpg" preserveAspectRatio="none" opacity="0.72"/>
+        <text x="1286" y="370" font-size="7" letter-spacing="1.2" fill="#2a1a2a" fill-opacity="0.75" font-family="DM Sans, monospace">BEACH CASE · 03</text>
+      </g>
+
+      <!-- RIGHT: tape + index card -->
+      <rect x="1314" y="116" width="64" height="16" fill="#f3dfc4" fill-opacity="0.18" transform="rotate(9 1346 124)"/>
+      <rect x="1264" y="376" width="50" height="14" fill="#f3dfc4" fill-opacity="0.16" transform="rotate(-7 1289 383)"/>
+      <g transform="rotate(3 1324 455)" filter="url(#crimePaperShadow)">
+        <rect x="1269" y="420" width="112" height="74" rx="2" fill="#e8dcc4" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+        <text x="1280" y="444" font-size="9" letter-spacing="1.5" fill="#f3dfc4" fill-opacity="0.6" font-family="DM Sans, monospace">CONFIDENTIAL</text>
+        <text x="1280" y="464" font-size="8" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.42" font-family="DM Sans, monospace">SOURCE: WCPD</text>
+        <text x="1280" y="482" font-size="8" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.42" font-family="DM Sans, monospace">FILE 04 / 88</text>
+      </g>
+
+      <!-- RIGHT: map fragment -->
+      <g transform="rotate(-2 1344 625)" filter="url(#crimePaperShadow)">
+        <rect x="1234" y="540" width="190" height="150" fill="#1a1830" fill-opacity="0.38" stroke="#ffffff" stroke-opacity="0.14"/>
+        <image x="1240" y="546" width="178" height="138" href="assets/bg/city-sunset.jpg" preserveAspectRatio="none" opacity="0.32"/>
+        <rect x="1240" y="546" width="178" height="138" fill="url(#crimeMapGrid)"/>
+        <text x="1248" y="570" font-size="8" letter-spacing="1.4" fill="#f3dfc4" fill-opacity="0.55" font-family="DM Sans, monospace">WEST COAST / 88.8</text>
+        <text x="1248" y="668" font-size="7" letter-spacing="1" fill="#f3dfc4" fill-opacity="0.4" font-family="DM Sans, monospace">ADJACENT PLATE · 26</text>
+      </g>
+
+      <!-- RIGHT: red thread + pins -->
+      <line x1="1384" y1="142" x2="1354" y2="300" stroke="#ff2448" stroke-opacity="0.72" stroke-width="1.4"/>
+      <line x1="1354" y1="300" x2="1292" y2="440" stroke="#ff2448" stroke-opacity="0.6" stroke-width="1.2"/>
+      <line x1="1292" y1="440" x2="1404" y2="570" stroke="#ff2448" stroke-opacity="0.55" stroke-width="1.2" stroke-dasharray="4 5"/>
+      <circle cx="1384" cy="142" r="4.5" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+      <circle cx="1354" cy="300" r="4" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+      <circle cx="1292" cy="440" r="4" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+      <circle cx="1404" cy="570" r="4" fill="#ff2448" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.2"/>
+        </g>
+  </svg>
+  </div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="CHIRAKA 首页">
+      <span class="brand-mark">C<span>+</span></span>
+      <span class="brand-copy">
+        <span class="brand-copy-row"><strong>CHIRAKA</strong><span class="brand-script-sub">Vice Unity</span></span>
+        <small>WEST COAST ARCHIVE · 城市档案</small>
+      </span>
+    </a>
+    <nav class="main-nav top-drawer-nav" aria-label="城市主导航">
+      <a class="nav-drawer-tab" href="index.html" data-theme="home" data-nav-key="home">
+        <span class="nav-tab-top"><span>00</span><span class="nav-tab-script">City Home</span></span>
+        <span class="nav-tab-main"><strong>城市首页</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab is-active" href="characters.html" data-theme="rose" data-nav-key="characters" aria-current="page">
+        <span class="nav-tab-top"><span>01</span><span class="nav-tab-script">Characters</span></span>
+        <span class="nav-tab-main"><strong>角色档案</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="news.html" data-theme="peach" data-nav-key="news">
+        <span class="nav-tab-top"><span>02</span><span class="nav-tab-script">City Desk</span></span>
+        <span class="nav-tab-main"><strong>城市新闻</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="gallery.html" data-theme="lilac" data-nav-key="gallery">
+        <span class="nav-tab-top"><span>03</span><span class="nav-tab-script">Gallery</span></span>
+        <span class="nav-tab-main"><strong>插画画廊</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="radio.html" data-theme="aqua" data-nav-key="radio">
+        <span class="nav-tab-top"><span>04</span><span class="nav-tab-script">FM 88.8</span></span>
+        <span class="nav-tab-main"><strong>城市电台</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+    </nav>
+    <div class="header-tools">
+      <button class="header-auth-btn" id="auth-trigger-btn" type="button" aria-label="切换访客或管理员登录模式">
+        <span class="auth-dot" id="auth-status-dot"></span>
+        <span id="auth-status-text">访客模式 · GUEST</span>
+      </button>
+      <a class="header-radio" href="radio.html" aria-label="打开城市电台">
+        <span class="live-dot"></span><span>FM 88.8</span>
+        <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </a>
+    </div>
+  </header>
+
+    <!-- 管理员顶部工作台控制条 (仅在管理员登录模式下显示) -->
+  <div class="admin-bar" id="admin-bar" role="region" aria-label="管理员工作台">
+    <div class="admin-bar-inner">
+      <div class="admin-bar-status">
+        <span class="admin-badge-pill">✦ ADMIN CLEARANCE</span>
+        <span id="admin-sync-indicator">☁ 数据与框架已分离 · 修改自动同步</span>
+        <button class="admin-pending-pill" id="admin-pending-btn" type="button">📋 待补充项：<b id="admin-pending-count">0</b> 处（点击查看）</button>
+      </div>
+      <div class="admin-bar-actions">
+        <button class="admin-tool-btn is-primary" id="admin-quick-add-btn" type="button">+ 新增内容</button>
+        <button class="admin-tool-btn is-gold" id="admin-backup-btn" type="button">⚙ 数据接口与备份</button>
+        <button class="admin-tool-btn is-danger" id="admin-reset-btn" type="button">↺ 恢复默认</button>
+        <button class="admin-tool-btn" id="admin-logout-btn" type="button">⇄ 切回访客模式</button>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <main>
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="page-head-inner">
+        <div>
+          <p class="eyebrow">ARCHIVE 01 // EVIDENCE &amp; CREW DOSSIER</p>
+          <h1 id="page-title">角色档案</h1>
+          <p class="page-head-en">Citizens &amp; Connections</p>
+        </div>
+        <div>
+          <p class="page-head-desc">按分类筛选人物，点击拍立得卷宗卡进入独立调查页与红线关系网。</p>
+          <div class="page-head-stats">
+            <div class="page-head-stat"><b id="character-total">06</b><span>份卷宗</span></div>
+            <div class="page-head-stat"><b>02</b><span>个分类</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="filter-bar" id="character-filters" role="group" aria-label="筛选角色">
+        <button class="filter-button is-selected" type="button" data-filter="all">全部卷宗</button>
+        <button class="filter-button" type="button" data-filter="core">核心角色</button>
+        <button class="filter-button" type="button" data-filter="side">配角档案</button>
+        <button class="filter-button admin-only" type="button" id="add-character-btn" style="margin-left:auto;border-color:var(--gold);color:var(--gold)">+ 新增角色卷宗</button>
+      </div>
+      <div class="character-grid" id="character-grid"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="brand-mark">C<span>+</span></span>
+        <p><b>CHIRAKA · 霓虹之城档案</b>角色、画面与故事的城市档案。</p>
+      </div>
+      <div class="footer-links">
+        <a href="index.html">城市首页</a>
+        <a href="characters.html">角色档案</a>
+        <a href="news.html">城市新闻</a>
+        <a href="gallery.html">插画画廊</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© CHIRAKA / 001 · VICE UNITY</span>
+      <span>VICE UNITY · CITY ARCHIVE</span>
+    </div>
+  </footer>
+    <!-- 1. 访客 / 管理员通行证登录切换弹窗 -->
+  <dialog class="chiraka-modal modal-narrow" id="auth-dialog" aria-labelledby="auth-dialog-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow">ACCESS TERMINAL // WCPD-88 ARCHIVE</p>
+          <h2 id="auth-dialog-title">城市档案通行证 · 模式切换</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭登录窗口">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="auth-mode-grid">
+          <div class="auth-card guest-card" id="auth-guest-card">
+            <div>
+              <span class="auth-card-tag">GUEST PASS · 访客通道</span>
+              <h3>访客浏览模式</h3>
+              <p>无需通行口令，以沉浸式只读视角浏览 CHIRAKA 城市首页、人物卷宗、新闻剪报、插画画廊与 FM 88.8 黑胶电台，自动隐藏所有编辑按钮。</p>
+            </div>
+            <button class="button button-ghost" id="switch-guest-btn" type="button" style="justify-content:center;width:100%"><span>进入访客浏览模式</span><b>→</b></button>
+          </div>
+
+          <div class="auth-card admin-card" id="auth-admin-card">
+            <div>
+              <span class="auth-card-tag">ADMIN CLEARANCE · 档案管理员</span>
+              <h3>管理员编辑模式</h3>
+              <p>验证管理员口令后，可在线修改所有「待补充」设定文案、增删角色与新闻报道、上传立绘与电台音频，并支持一键导出最新 <code>data.js</code>。</p>
+              <div class="form-field" style="margin-top:12px">
+                <label for="admin-pass-input">
+                  <span>管理员通行口令</span>
+                  <button type="button" id="fill-default-pass-btn" style="color:var(--gold);font-size:11px;text-decoration:underline">填入默认: chiraka888</button>
+                </label>
+                <input class="form-input" id="admin-pass-input" type="password" placeholder="请输入管理员口令 (默认 chiraka888)" autocomplete="off">
+                <small id="auth-error-msg" style="color:#ff5c8a;font-weight:700;min-height:16px"></small>
+              </div>
+            </div>
+            <button class="button button-primary" id="login-admin-btn" type="button" style="justify-content:center;width:100%"><span>验证并开启管理员模式</span><b>✦</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 2. 管理员通用内容编辑器弹窗 (支持首页、角色、新闻、画廊、电台曲目) -->
+  <dialog class="chiraka-modal" id="editor-dialog" aria-labelledby="editor-dialog-title">
+    <form class="modal-shell" id="editor-form" method="dialog">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow" id="editor-dialog-kicker">ARCHIVE EDITOR // ADMIN CLEARANCE</p>
+          <h2 id="editor-dialog-title">编辑档案内容</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭编辑器">×</button>
+      </header>
+      <div class="modal-body" id="editor-form-body"></div>
+      <footer class="modal-foot">
+        <div id="editor-foot-left"></div>
+        <div style="display:flex;gap:10px;margin-left:auto">
+          <button class="button button-ghost" type="button" data-close-dialog>取消</button>
+          <button class="button button-primary" id="editor-save-btn" type="submit"><span>保存修改</span><b>✓</b></button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 3. 待补充清单 / 数据备份导入 / 密码修改 / 确认重置弹窗 -->
+  <dialog class="chiraka-modal" id="data-dialog" aria-labelledby="data-dialog-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow" id="data-dialog-kicker">ARCHIVE DATA CENTER // WCPD-88</p>
+          <h2 id="data-dialog-title">档案数据管理与待补充清单</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭数据中心">×</button>
+      </header>
+      <div class="modal-body" id="data-dialog-body"></div>
+      <footer class="modal-foot">
+        <span style="font-size:12px;color:rgba(255,235,245,0.7)">提示：所有修改会自动保存在浏览器本地，也可随时导出为 data.js 覆盖原文件。</span>
+        <button class="button button-ghost" type="button" data-close-dialog>关闭窗口</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

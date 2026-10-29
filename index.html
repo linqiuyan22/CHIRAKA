@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#120b24">
+  <meta name="description" content="CHIRAKA 霓虹之城档案：角色、城市事件、插画与音乐。">
+  <title>CHIRAKA · Vice Unity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Caveat:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Great+Vibes&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-v3.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="page-home" data-page="home">
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="CHIRAKA 首页">
+      <span class="brand-mark">C<span>+</span></span>
+      <span class="brand-copy">
+        <span class="brand-copy-row"><strong>CHIRAKA</strong><span class="brand-script-sub">Vice Unity</span></span>
+        <small>WEST COAST ARCHIVE · 城市档案</small>
+      </span>
+    </a>
+    <nav class="main-nav top-drawer-nav" aria-label="城市主导航">
+      <a class="nav-drawer-tab is-active" href="index.html" data-theme="home" data-nav-key="home" aria-current="page">
+        <span class="nav-tab-top"><span>00</span><span class="nav-tab-script">City Home</span></span>
+        <span class="nav-tab-main"><strong>城市首页</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="characters.html" data-theme="rose" data-nav-key="characters">
+        <span class="nav-tab-top"><span>01</span><span class="nav-tab-script">Characters</span></span>
+        <span class="nav-tab-main"><strong>角色档案</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="news.html" data-theme="peach" data-nav-key="news">
+        <span class="nav-tab-top"><span>02</span><span class="nav-tab-script">City Desk</span></span>
+        <span class="nav-tab-main"><strong>城市新闻</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="gallery.html" data-theme="lilac" data-nav-key="gallery">
+        <span class="nav-tab-top"><span>03</span><span class="nav-tab-script">Gallery</span></span>
+        <span class="nav-tab-main"><strong>插画画廊</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+      <a class="nav-drawer-tab" href="radio.html" data-theme="aqua" data-nav-key="radio">
+        <span class="nav-tab-top"><span>04</span><span class="nav-tab-script">FM 88.8</span></span>
+        <span class="nav-tab-main"><strong>城市电台</strong><span class="nav-tab-enter-hint">↗</span></span>
+      </a>
+    </nav>
+    <div class="header-tools">
+      <button class="header-auth-btn" id="auth-trigger-btn" type="button" aria-label="切换访客或管理员登录模式">
+        <span class="auth-dot" id="auth-status-dot"></span>
+        <span id="auth-status-text">访客模式 · GUEST</span>
+      </button>
+      <a class="header-radio" href="radio.html" aria-label="打开城市电台">
+        <span class="live-dot"></span><span>FM 88.8</span>
+        <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </a>
+    </div>
+  </header>
+
+    <!-- 管理员顶部工作台控制条 (仅在管理员登录模式下显示) -->
+  <div class="admin-bar" id="admin-bar" role="region" aria-label="管理员工作台">
+    <div class="admin-bar-inner">
+      <div class="admin-bar-status">
+        <span class="admin-badge-pill">✦ ADMIN CLEARANCE</span>
+        <span id="admin-sync-indicator">☁ 数据与框架已分离 · 修改自动同步</span>
+        <button class="admin-pending-pill" id="admin-pending-btn" type="button">📋 待补充项：<b id="admin-pending-count">0</b> 处（点击查看）</button>
+      </div>
+      <div class="admin-bar-actions">
+        <button class="admin-tool-btn is-primary" id="admin-quick-add-btn" type="button">+ 新增内容</button>
+        <button class="admin-tool-btn is-gold" id="admin-backup-btn" type="button">⚙ 数据接口与备份</button>
+        <button class="admin-tool-btn is-danger" id="admin-reset-btn" type="button">↺ 恢复默认</button>
+        <button class="admin-tool-btn" id="admin-logout-btn" type="button">⇄ 切回访客模式</button>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <main class="city-home city-archive-home" id="home">
+    <div class="summer-backdrop" aria-hidden="true"></div>
+    <div class="summer-vignette" aria-hidden="true"></div>
+    <div class="sun-stamp" aria-hidden="true"></div>
+
+    <div class="home-top-stamp">
+      <span>CHIRAKA · VICE UNITY ARCHIVE</span>
+      <div style="display:flex;align-items:center;gap:10px"><span>THE CITY IS YOURS TO EXPLORE</span><button class="admin-edit-chip" id="replace-home-bg-btn" type="button">🖼 更换首页背景图</button></div>
+    </div>
+
+    <div class="home-scene">
+      <!-- Left Column: Sunset Hero & Motto Card -->
+      <section class="summer-intro" aria-labelledby="city-main-title">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="summer-overline"><span class="summer-dot"></span> <span id="home-overline-text">A CITY OF STORIES &amp; DESIRE</span></span><button class="admin-edit-chip" id="edit-home-hero-btn" type="button">✎ 编辑首页标语</button></div>
+
+        <div class="hero-title-lockup">
+          <h1 id="city-main-title"><span id="home-main-title-text">CHIRAKA</span><span class="title-spark">✳</span></h1>
+          <div class="intro-script" id="home-intro-script">Vice Unity</div>
+        </div>
+
+        <div class="hero-motto-card">
+          <p class="summer-intro-cn" id="home-motto-cn">混沌中，旋律联结<br>罪恶、欲望与爱。</p>
+          <p class="summer-intro-en-note" id="home-motto-en">Where sunset palms meet late-night vinyl &amp; untamed souls.</p>
+        </div>
+      </section>
+
+      <!-- Right Column: Noir & Neon Investigation Board -->
+      <section class="drawer-column" aria-label="城市档案调查板">
+        <div class="drawer-top">
+          <span>EVIDENCE BOARD // CASE ARCHIVE 001</span>
+          <div style="display:flex;align-items:center;gap:10px"><button class="admin-edit-chip" id="edit-home-folder-btn" type="button">✎ 编辑当前抽屉卷宗</button><span class="drawer-top-script">Noir &amp; Neon Edition</span></div>
+        </div>
+
+        <div class="drawer-case" id="drawer-case" data-theme="rose">
+          <span class="board-screw tl" aria-hidden="true"></span>
+          <span class="board-screw tr" aria-hidden="true"></span>
+          <span class="board-screw bl" aria-hidden="true"></span>
+          <span class="board-screw br" aria-hidden="true"></span>
+
+          <a class="board-clipping board-clipping-top" href="news.html" title="前往城市新闻">
+            <strong>CHIRAKA DAILY DISPATCH ↗</strong>
+            WEST COAST CASE FILE · 城市新闻快讯
+          </a>
+          <a class="board-clipping board-clipping-bottom" href="radio.html" title="前往城市电台">
+            <strong>FM 88.8 · FABULOUS VEGAS ↗</strong>
+            VICE UNITY · 午夜黑胶电台
+          </a>
+
+          <!-- Red Investigation Strings Connecting Pushpins Across the Board -->
+          <svg class="board-strings-svg" viewBox="0 0 680 410" preserveAspectRatio="none" aria-hidden="true">
+            <line x1="52" y1="18" x2="326" y2="14" />
+            <line x1="326" y1="14" x2="536" y2="108" />
+            <line x1="536" y1="108" x2="652" y2="168" />
+            <line x1="652" y1="168" x2="496" y2="394" />
+            <line x1="52" y1="18" x2="22" y2="288" />
+            <line x1="22" y1="288" x2="496" y2="394" />
+            <circle class="pin-head" cx="52" cy="18" r="5.5" />
+            <circle class="pin-head" cx="326" cy="14" r="5.5" />
+            <circle class="pin-head" cx="536" cy="108" r="5.5" />
+            <circle class="pin-head" cx="652" cy="168" r="5.5" />
+            <circle class="pin-head" cx="22" cy="288" r="5.5" />
+            <circle class="pin-head" cx="496" cy="394" r="5.5" />
+          </svg>
+
+          <article class="file-sheet" role="tabpanel" id="file-sheet">
+            <div class="sheet-upper">
+              <span id="file-kicker">ARCHIVE 01 // CHARACTER FILES</span>
+              <!-- Direct Clue Tabs inside the Investigation Board -->
+              <div class="board-clue-switcher" role="group" aria-label="调查板线索切换">
+                <button class="board-clue-btn is-active" type="button" data-mini-drawer="0">01 角色</button>
+                <button class="board-clue-btn" type="button" data-mini-drawer="1">02 新闻</button>
+                <button class="board-clue-btn" type="button" data-mini-drawer="2">03 画廊</button>
+                <button class="board-clue-btn" type="button" data-mini-drawer="3">04 电台</button>
+              </div>
+            </div>
+
+            <div class="sheet-body">
+              <div class="sheet-left">
+                <div class="sheet-title-row">
+                  <div class="sheet-index" id="file-num">01</div>
+                  <p class="sheet-en" id="file-english">Citizens &amp; Connections</p>
+                </div>
+                <h2 id="file-heading">角色档案</h2>
+                <p class="sheet-desc" id="file-description">人物、身份与关系交织成一座西海岸不夜城。</p>
+                <div class="sheet-quick-pills" id="file-pills">
+                  <span class="sheet-pill">核心角色 × 04</span>
+                  <span class="sheet-pill">配角档案 × 02</span>
+                  <span class="sheet-pill">红线关系网</span>
+                </div>
+                <a class="sheet-enter" id="file-enter" href="characters.html">打开卷宗 // OPEN <span aria-hidden="true">↗</span></a>
+              </div>
+
+              <div class="sheet-image" aria-label="档案配图">
+                <div class="sheet-photo-frame">
+                  <span class="sheet-photo-tape" aria-hidden="true"></span>
+                  <button class="cover-replace-btn" id="replace-home-cover-btn" type="button" title="更换此卷宗拍立得封面图">🖼 更换封面图</button>
+                  <div class="sheet-photo-img-wrap">
+                    <img id="file-photo-img" src="assets/bg/city-sunset.jpg" alt="档案视觉预览">
+                  </div>
+                  <div class="sheet-photo-caption">
+                    <span id="file-photo-label">Vice Unity · 01</span>
+                    <span>✳</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sheet-footer">
+              <span>CASE FILE · 001</span>
+              <div class="sheet-signed">
+                <span>VERIFIED BY</span>
+                <span class="sheet-signature-en" id="file-signature">Chiraka</span>
+              </div>
+              <span id="file-counter">DOSSIER · 01 / 04</span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div class="summer-floorline">
+      <span>VICE UNITY · WEST COAST</span>
+      <span>WHERE THE SUNSET NEVER ENDS</span>
+      <span>CHIRAKA FM 88.8</span>
+    </div>
+  </main>
+
+    <!-- 1. 访客 / 管理员通行证登录切换弹窗 -->
+  <dialog class="chiraka-modal modal-narrow" id="auth-dialog" aria-labelledby="auth-dialog-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow">ACCESS TERMINAL // WCPD-88 ARCHIVE</p>
+          <h2 id="auth-dialog-title">城市档案通行证 · 模式切换</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭登录窗口">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="auth-mode-grid">
+          <div class="auth-card guest-card" id="auth-guest-card">
+            <div>
+              <span class="auth-card-tag">GUEST PASS · 访客通道</span>
+              <h3>访客浏览模式</h3>
+              <p>无需通行口令，以沉浸式只读视角浏览 CHIRAKA 城市首页、人物卷宗、新闻剪报、插画画廊与 FM 88.8 黑胶电台，自动隐藏所有编辑按钮。</p>
+            </div>
+            <button class="button button-ghost" id="switch-guest-btn" type="button" style="justify-content:center;width:100%"><span>进入访客浏览模式</span><b>→</b></button>
+          </div>
+
+          <div class="auth-card admin-card" id="auth-admin-card">
+            <div>
+              <span class="auth-card-tag">ADMIN CLEARANCE · 档案管理员</span>
+              <h3>管理员编辑模式</h3>
+              <p>验证管理员口令后，可在线修改所有「待补充」设定文案、增删角色与新闻报道、上传立绘与电台音频，并支持一键导出最新 <code>data.js</code>。</p>
+              <div class="form-field" style="margin-top:12px">
+                <label for="admin-pass-input">
+                  <span>管理员通行口令</span>
+                  <button type="button" id="fill-default-pass-btn" style="color:var(--gold);font-size:11px;text-decoration:underline">填入默认: chiraka888</button>
+                </label>
+                <input class="form-input" id="admin-pass-input" type="password" placeholder="请输入管理员口令 (默认 chiraka888)" autocomplete="off">
+                <small id="auth-error-msg" style="color:#ff5c8a;font-weight:700;min-height:16px"></small>
+              </div>
+            </div>
+            <button class="button button-primary" id="login-admin-btn" type="button" style="justify-content:center;width:100%"><span>验证并开启管理员模式</span><b>✦</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 2. 管理员通用内容编辑器弹窗 (支持首页、角色、新闻、画廊、电台曲目) -->
+  <dialog class="chiraka-modal" id="editor-dialog" aria-labelledby="editor-dialog-title">
+    <form class="modal-shell" id="editor-form" method="dialog">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow" id="editor-dialog-kicker">ARCHIVE EDITOR // ADMIN CLEARANCE</p>
+          <h2 id="editor-dialog-title">编辑档案内容</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭编辑器">×</button>
+      </header>
+      <div class="modal-body" id="editor-form-body"></div>
+      <footer class="modal-foot">
+        <div id="editor-foot-left"></div>
+        <div style="display:flex;gap:10px;margin-left:auto">
+          <button class="button button-ghost" type="button" data-close-dialog>取消</button>
+          <button class="button button-primary" id="editor-save-btn" type="submit"><span>保存修改</span><b>✓</b></button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 3. 待补充清单 / 数据备份导入 / 密码修改 / 确认重置弹窗 -->
+  <dialog class="chiraka-modal" id="data-dialog" aria-labelledby="data-dialog-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow" id="data-dialog-kicker">ARCHIVE DATA CENTER // WCPD-88</p>
+          <h2 id="data-dialog-title">档案数据管理与待补充清单</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭数据中心">×</button>
+      </header>
+      <div class="modal-body" id="data-dialog-body"></div>
+      <footer class="modal-foot">
+        <span style="font-size:12px;color:rgba(255,235,245,0.7)">提示：所有修改会自动保存在浏览器本地，也可随时导出为 data.js 覆盖原文件。</span>
+        <button class="button button-ghost" type="button" data-close-dialog>关闭窗口</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
