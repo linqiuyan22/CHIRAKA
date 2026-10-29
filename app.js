@@ -198,7 +198,10 @@ async function syncDataToRemoteServer() {
   try {
     const res = await window.fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-chiraka-pass": authState.getPasscode()
+      },
       body: JSON.stringify(DATA)
     });
     if (res && res.ok) {
@@ -208,6 +211,42 @@ async function syncDataToRemoteServer() {
   } catch (e) {}
   if (syncEl) syncEl.textContent = "☁ 数据与框架已分离 · 修改已自动持久化";
   return false;
+}
+
+/* 口令校验走服务端；返回 true/false/null（null = 服务端不可达，退回本地校验） */
+async function verifyPasscodeOnServer(passcode) {
+  const apiUrl = authState.getApiUrl();
+  if (!apiUrl || window.location.protocol === "file:") return null;
+  const loginUrl = apiUrl.replace(/\/content\/?$/, "/login");
+  if (loginUrl === apiUrl) return null;
+  try {
+    const res = await window.fetch(loginUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode })
+    });
+    if (res.status === 401) return false;
+    return !!(res && res.ok);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function changePasscodeOnServer(oldPass, newPass) {
+  const apiUrl = authState.getApiUrl();
+  if (!apiUrl || window.location.protocol === "file:") return null;
+  const passUrl = apiUrl.replace(/\/content\/?$/, "/passcode");
+  if (passUrl === apiUrl) return null;
+  try {
+    const res = await window.fetch(passUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ oldPass, newPass })
+    });
+    return !!(res && res.ok);
+  } catch (e) {
+    return null;
+  }
 }
 
 function saveSiteData(toastMsg = "✓ 修改已保存并同步至独立数据层") {
@@ -2920,14 +2959,24 @@ function openBackupAndSettingsModal() {
     }
   });
 
-  $("#save-new-pass-btn", bodyEl)?.addEventListener("click", () => {
+  $("#save-new-pass-btn", bodyEl)?.addEventListener("click", async () => {
     const val = $("#new-admin-pass-input", bodyEl)?.value.trim();
     if (!val) {
       showToast("⚠ 口令不能为空");
       return;
     }
+    if (val.length < 6) {
+      showToast("⚠ 新口令至少 6 位");
+      return;
+    }
+    const oldPass = authState.getPasscode();
+    const verdict = await changePasscodeOnServer(oldPass, val);
+    if (verdict === false) {
+      showToast("⚠ 旧口令校验失败，未修改（请确认当前口令）");
+      return;
+    }
     authState.setPasscode(val);
-    showToast(`✓ 管理员口令已更新为：${val}`);
+    showToast(verdict === null ? "✓ 已更新本地口令（服务端未连通）" : "✓ 管理员口令已更新，并已写入服务端");
   });
 
   if (typeof dialog.showModal === "function" && !dialog.open) {
@@ -3063,21 +3112,38 @@ function initAuthAndAdminSystem() {
     }
   });
 
-  const tryAdminLogin = () => {
+  const tryAdminLogin = async () => {
     const passInput = $("#admin-pass-input");
     const errEl = $("#auth-error-msg");
     const entered = (passInput?.value || "").trim();
-    const expected = authState.getPasscode();
-    if (entered === expected || entered === "admin" || entered === "chiraka888") {
+    if (!entered) {
+      if (errEl) errEl.textContent = "⚠ 请输入管理员口令";
+      return;
+    }
+    const closeAndEnter = () => {
       if (errEl) errEl.textContent = "";
+      authState.setPasscode(entered);
       setAuthMode("admin");
       const dialog = $("#auth-dialog");
       if (dialog) {
         dialog.close();
         document.body.classList.remove("has-dialog");
       }
-    } else {
-      if (errEl) errEl.textContent = `⚠ 通行口令不正确（提示：默认口令为 ${expected}）`;
+    };
+    if (errEl) errEl.textContent = "⏳ 正在校验口令…";
+    const serverVerdict = await verifyPasscodeOnServer(entered);
+    if (serverVerdict === null) {
+      if (entered === authState.getPasscode()) {
+        closeAndEnter();
+      } else if (errEl) {
+        errEl.textContent = "⚠ 离线预览模式下仅本地口令可用";
+      }
+      return;
+    }
+    if (serverVerdict) {
+      closeAndEnter();
+    } else if (errEl) {
+      errEl.textContent = "⚠ 通行口令不正确";
     }
   };
 
