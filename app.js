@@ -410,7 +410,12 @@ const ICON_PATHS = {
   arrowLeft: '<path d="M19.4 12H5.2"/><path d="M10.6 6.6L4.8 12l5.8 5.4"/>',
   external: '<path d="M14 4.6h5.4V10"/><path d="M19.4 4.6L11 13"/><path d="M18 14.4v4.2a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.2"/>',
   dice_shuffle: '<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3.2"/><circle cx="8.5" cy="8.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.25" fill="currentColor" stroke="none"/>',
-  edit: '<path d="M15.6 4.4l4 4-10.4 10.4-4.8.8.8-4.8z"/><path d="M13.6 6.4l4 4"/>'
+  edit: '<path d="M15.6 4.4l4 4-10.4 10.4-4.8.8.8-4.8z"/><path d="M13.6 6.4l4 4"/>',
+  hash: '<path d="M9.4 3.6L7.6 20.4M16.4 3.6l-1.8 16.8"/><path d="M4 8.6h15.6M3.4 15.4h15.6"/>',
+  flame: '<path d="M12 20.6c3.5 0 5.9-2.3 5.9-5.4 0-3.7-3.1-5.8-4.3-9.1-.4-1.1-1.5-1.3-2.1-.3-1 1.7-.6 3.4.2 4.8-1.4-.6-2.5-1.7-3.1-3.1-1.5 2-2.3 4.2-2.3 6.7 0 3.6 2.3 6.4 5.7 6.4z"/>',
+  users: '<circle cx="9" cy="8" r="3.3"/><path d="M3 19.6a6 6 0 0 1 12 0"/><path d="M16.2 5.6a3 3 0 0 1 0 5.6"/><path d="M17.6 13.6a5.6 5.6 0 0 1 3.4 5.2"/>',
+  quote: '<path d="M9.4 6.4c-2.6.7-4.2 2.6-4.2 5.2v6h5.4v-5.4H7.4c0-1.5.8-2.6 2-3.1z"/><path d="M18.8 6.4c-2.6.7-4.2 2.6-4.2 5.2v6h5.4v-5.4h-3.2c0-1.5.8-2.6 2-3.1z"/>',
+  chevronRight: '<path d="M9.6 5.4L16.2 12l-6.6 6.6"/>'
 };
 
 function icon(name, extraClass = "") {
@@ -1614,34 +1619,131 @@ function renderRelatedCharacterPills(charIds = []) {
   return charIds
     .map(cid => getCharacterById(cid))
     .filter(Boolean)
-    .map(c => `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(c.id)}">@${escapeHtml(c.label)}</span>`)
-    .join(" ");
+    .map(c => `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(c.id)}">${icon("link")}@${escapeHtml(c.label)}</span>`)
+    .join("");
 }
 
-function newsRow(item) {
-  const href = window.CHIRAKA_SPA_MODE ? `#article-${item.id}` : `article.html?id=${encodeURIComponent(item.id)}`;
-  const isForum = item.postType === "forum";
-  const replyCount = Array.isArray(item.comments) ? item.comments.length : 0;
-  const charPills = renderRelatedCharacterPills(item.relatedCharacters);
+function isForumPost(item) {
+  return Boolean(item) && item.postType === "forum";
+}
+
+function newsHref(item) {
+  return window.CHIRAKA_SPA_MODE ? `#article-${item.id}` : `article.html?id=${encodeURIComponent(item.id)}`;
+}
+
+/* 稳定的帖子编号：由 id 推导，切换筛选时不会跳号 */
+function newsThreadCode(id) {
+  const raw = String(id || "");
+  let hash = 7;
+  for (let i = 0; i < raw.length; i += 1) hash = (hash * 31 + raw.charCodeAt(i)) % 9973;
+  return String(hash + 1000).slice(-4);
+}
+
+function newsInitial(name) {
+  const value = String(name || "").trim();
+  return value ? value.slice(0, 1) : "?";
+}
+
+function newsCount(value) {
+  const num = Number(value) || 0;
+  if (num >= 10000) return `${Math.round(num / 1000)}k`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+  return String(num);
+}
+
+function newsReplyCount(item) {
+  return Array.isArray(item.comments) ? item.comments.length : 0;
+}
+
+/* ---------- City Desk：头版剪报 ---------- */
+function cityDeskLead(item) {
+  const href = newsHref(item);
+  const art = item.image
+    ? `<span class="cdm-lead-art">
+         <img src="${escapeHtml(resolveImg(item.image))}" alt="${escapeHtml(item.title)}">
+         <span class="cover-replace-btn" role="button" tabindex="0" data-edit-news-cover="${escapeHtml(item.id)}">${icon("image")}<span>更换配图</span></span>
+       </span>`
+    : `<span class="cdm-lead-art">
+         <span class="cdm-lead-art-empty">${icon("image")} 待补充配图</span>
+         <span class="cover-replace-btn" role="button" tabindex="0" data-edit-news-cover="${escapeHtml(item.id)}">${icon("image")}<span>上传配图</span></span>
+       </span>`;
+
   return `
-    <a class="news-row" href="${href}" data-news-id="${escapeHtml(item.id)}">
-      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
-        <span class="post-type-badge ${isForum ? "is-forum" : "is-news"}">${isForum ? icon("comment") + " 街头论坛" : icon("news") + " 官方报道"}</span>
-        <span class="news-row-tag">${escapeHtml(item.category)}</span>
-      </div>
-      <span class="news-row-copy">
-        <strong>${wrapPendingHtml(item.title)}</strong>
-        <small>${wrapPendingHtml(item.summary)}</small>
-        <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:11px;color:rgba(255,235,245,0.72)">
-          <span>${icon("user")} ${escapeHtml(item.author || "匿名")} (${escapeHtml(item.authorRole || "市民")})</span>
-          <span>· ${icon("comment")} ${replyCount} 条跟帖</span>
-          <span>· ${icon("heart")} ${item.likes || 0}</span>
-          ${charPills}
+    <a class="cdm-lead" href="${href}" data-news-id="${escapeHtml(item.id)}">
+      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-news="${escapeHtml(item.id)}">${icon("edit")}<span>编辑主帖</span></span>
+      <span class="cdm-lead-masthead">
+        CHIRAKA CITY DESK
+        <span class="cdm-lead-vol">VOL.01 · 西海岸晚报</span>
+      </span>
+      <span class="cdm-lead-grid">
+        ${art}
+        <span class="cdm-copy">
+          <span class="cdm-kicker">${escapeHtml(item.category || "头版")} · 头版头条报道</span>
+          <h2>${wrapPendingHtml(item.title)}</h2>
+          <p class="cdm-standfirst">${wrapPendingHtml(item.summary)}</p>
+          <span class="cdm-byline">
+            <span>BY ${wrapPendingHtml(item.author)} / ${escapeHtml(item.authorRole || "官方记者")}</span>
+            <span>${escapeHtml(item.date)}</span>
+            <span>浏览 ${newsCount(item.views)}</span>
+          </span>
+          <span class="cdm-lead-foot">
+            <span class="cdm-stat">${icon("heart")} ${item.likes || 0}</span>
+            <span class="cdm-stat">${icon("comment")} ${newsReplyCount(item)} 条跟帖</span>
+            ${renderRelatedCharacterPills(item.relatedCharacters)}
+            <span class="cdm-read">阅读全文 ${icon("arrowRight")}</span>
+          </span>
         </span>
       </span>
-      <span style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <span class="news-row-date">${wrapPendingHtml(item.date)}</span>
+    </a>
+  `;
+}
+
+/* ---------- City Desk：次级报道索引 ---------- */
+function cityDeskBrief(item, index) {
+  return `
+    <a class="cdm-brief" href="${newsHref(item)}" data-news-id="${escapeHtml(item.id)}">
+      <span class="cdm-brief-no">${String(index + 2).padStart(2, "0")}</span>
+      <span class="cdm-brief-copy">
+        <strong>${wrapPendingHtml(item.title)}</strong>
+        <small>${wrapPendingHtml(item.summary)}</small>
+        <span class="cdm-brief-meta">
+          <span class="tag-line tag-line--board">${escapeHtml(item.category || "报道")}</span>
+          <span>${escapeHtml(item.author || "编辑部")}</span>
+          <span>${escapeHtml(item.date)}</span>
+          ${renderRelatedCharacterPills(item.relatedCharacters)}
+        </span>
+      </span>
+      <span class="cdm-brief-side">
+        <span class="cdm-stat">${icon("eye")} ${newsCount(item.views)}</span>
+        <span class="cdm-stat">${icon("heart")} ${item.likes || 0}</span>
         <span class="admin-edit-chip" role="button" tabindex="0" data-edit-news="${escapeHtml(item.id)}">${icon("edit")}<span>编辑</span></span>
+      </span>
+    </a>
+  `;
+}
+
+/* ---------- Night BBS：帖子列表行 ---------- */
+function bbsThreadRow(item) {
+  return `
+    <a class="bbs-thread" href="${newsHref(item)}" data-news-id="${escapeHtml(item.id)}">
+      <span class="bbs-avatar">${escapeHtml(newsInitial(item.author))}</span>
+      <span class="bbs-thread-main">
+        <span class="bbs-thread-head">
+          <span class="bbs-handle">@${escapeHtml(item.author || "匿名市民")}</span>
+          <span class="tag-line tag-line--ident">${escapeHtml(item.authorRole || "匿名市民")}</span>
+          <span class="tag-line tag-line--thread">#${newsThreadCode(item.id)}</span>
+          <span class="bbs-time">${escapeHtml(item.date)}</span>
+        </span>
+        <h3 class="bbs-thread-title">${wrapPendingHtml(item.title)}</h3>
+        <p class="bbs-thread-excerpt">${wrapPendingHtml(item.summary)}</p>
+        <span class="bbs-thread-foot">
+          <span class="tag-line tag-line--board">/ ${escapeHtml(item.category || "街头论坛")}</span>
+          <span class="bbs-stat">${icon("eye")} ${newsCount(item.views)}</span>
+          <span class="bbs-stat">${icon("heart")} ${item.likes || 0}</span>
+          <span class="bbs-stat">${icon("comment")} ${newsReplyCount(item)}</span>
+          ${renderRelatedCharacterPills(item.relatedCharacters)}
+          <span class="admin-edit-chip" role="button" tabindex="0" data-edit-news="${escapeHtml(item.id)}">${icon("edit")}<span>编辑</span></span>
+        </span>
       </span>
     </a>
   `;
@@ -1650,15 +1752,15 @@ function newsRow(item) {
 let currentNewsFilter = "全部";
 
 function renderNewsSection() {
-  const list = $("#news-list");
-  const leadHost = $("#news-lead");
-  if (!list || !leadHost) return;
+  const deskHost = $("#city-desk-block");
+  const bbsHost = $("#night-bbs-block");
+  if (!deskHost || !bbsHost) return;
 
   const customCats = [...new Set(DATA.news.map(item => item.category))];
   const filterTabs = [
     ["全部", "全部动态"],
     ["type:news", icon("news") + " 官方新闻报道"],
-    ["type:forum", icon("comment") + " 街头匿名论坛 (BBS)"],
+    ["type:forum", icon("comment") + " 街头匿名论坛"],
     ...customCats.map(c => [c, c])
   ];
 
@@ -1667,7 +1769,7 @@ function renderNewsSection() {
     filterHost.innerHTML = filterTabs.map(([val, lbl]) => `
       <button class="filter-button${val === currentNewsFilter ? " is-selected" : ""}" type="button" data-news-filter="${escapeHtml(val)}">${lbl}</button>
     `).join("") + `
-      <button class="filter-button admin-only" type="button" id="add-news-btn" style="margin-left:auto;border-color:var(--gold);color:var(--gold)">+ 发布报道 / 论坛新帖</button>
+      <button class="filter-button admin-only" type="button" id="add-news-btn" style="margin-left:auto">${icon("plus")} 发布报道 / 论坛新帖</button>
     `;
 
     $$("[data-news-filter]", filterHost).forEach(btn => {
@@ -1682,49 +1784,55 @@ function renderNewsSection() {
 
   const items = DATA.news.filter(i => {
     if (currentNewsFilter === "全部") return true;
-    if (currentNewsFilter === "type:news") return i.postType !== "forum";
-    if (currentNewsFilter === "type:forum") return i.postType === "forum";
+    if (currentNewsFilter === "type:news") return !isForumPost(i);
+    if (currentNewsFilter === "type:forum") return isForumPost(i);
     return i.category === currentNewsFilter;
   });
 
-  const [lead, ...rest] = items;
-  if (!lead) {
-    leadHost.innerHTML = `<div class="empty-state">当前板块暂无帖子</div>`;
-    list.innerHTML = "";
-    return;
+  const deskItems = items.filter(i => !isForumPost(i));
+  const forumItems = items.filter(i => isForumPost(i));
+
+  if (deskItems.length) {
+    const [lead, ...briefs] = deskItems;
+    deskHost.hidden = false;
+    deskHost.innerHTML = `
+      <header class="news-block-head">
+        <span class="news-block-tag">CITY DESK</span>
+        <h3 class="news-block-title">城市新闻 · 官方报道</h3>
+        <span class="news-block-count">${deskItems.length} 条报道</span>
+      </header>
+      ${cityDeskLead(lead)}
+      ${briefs.length ? `<div class="desk-brief-list">${briefs.map(cityDeskBrief).join("")}</div>` : ""}
+    `;
+  } else {
+    deskHost.hidden = true;
+    deskHost.innerHTML = "";
   }
 
-  const leadHref = window.CHIRAKA_SPA_MODE ? `#article-${lead.id}` : `article.html?id=${encodeURIComponent(lead.id)}`;
-  const leadImgHtml = lead.image
-    ? `<img src="${escapeHtml(resolveImg(lead.image))}" alt="${escapeHtml(lead.title)}" style="width:100%;height:100%;object-fit:cover">`
-    : `<span>待补充配图</span>`;
-  const leadReplyCount = Array.isArray(lead.comments) ? lead.comments.length : 0;
-  const isLeadForum = lead.postType === "forum";
+  if (forumItems.length) {
+    bbsHost.hidden = false;
+    bbsHost.innerHTML = `
+      <header class="news-block-head news-block-head--bbs">
+        <span class="news-block-tag">NIGHT BBS</span>
+        <h3 class="news-block-title">街头匿名论坛</h3>
+        <span class="news-block-count">匿名节点 · ${forumItems.length} 帖在架</span>
+      </header>
+      <div class="bbs-thread-list">${forumItems.map(bbsThreadRow).join("")}</div>
+    `;
+  } else {
+    bbsHost.hidden = true;
+    bbsHost.innerHTML = "";
+  }
 
-  leadHost.innerHTML = `
-    <a class="lead-story" href="${leadHref}" data-news-id="${escapeHtml(lead.id)}" style="position:relative">
-      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-news="${escapeHtml(lead.id)}">${icon("edit")}<span>编辑主帖</span></span>
-      <span class="lead-visual" style="overflow:hidden">
-        ${leadImgHtml}
-        <span class="cover-replace-btn" role="button" tabindex="0" data-edit-news-cover="${escapeHtml(lead.id)}">${icon("image")}<span>更换配图</span></span>
-      </span>
-      <span class="lead-body">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="post-type-badge ${isLeadForum ? "is-forum" : "is-news"}">${isLeadForum ? icon("comment") + " 街头论坛热帖" : icon("news") + " 头版头条报道"}</span>
-          <span class="story-tag">${escapeHtml(lead.category)}</span>
-          ${renderRelatedCharacterPills(lead.relatedCharacters)}
-        </div>
-        <h2>${wrapPendingHtml(lead.title)}</h2>
-        <p>${wrapPendingHtml(lead.summary)}</p>
-        <small style="color:#4d3859;font-weight:700;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span>${icon("user")} ${wrapPendingHtml(lead.author)} (${escapeHtml(lead.authorRole || "记者")}) · ${wrapPendingHtml(lead.date)}</span>
-          <span>${icon("sparkle")} 热度 ${lead.views || 500} · ${icon("heart")} ${lead.likes || 0} · ${icon("comment")} ${leadReplyCount} 条回帖 ${icon("external")}</span>
-        </small>
-      </span>
-    </a>
-  `;
-  list.innerHTML = rest.map(newsRow).join("");
+  if (!deskItems.length && !forumItems.length) {
+    deskHost.hidden = false;
+    deskHost.innerHTML = `<div class="empty-state">当前板块暂无帖子</div>`;
+  }
 
+  wireNewsCardEvents();
+}
+
+function wireNewsCardEvents() {
   $$("[data-edit-news]").forEach(btn => {
     btn.addEventListener("click", e => {
       e.preventDefault();
@@ -1764,6 +1872,230 @@ function initNews() {
   renderNewsSection();
 }
 
+function articleCoverFigure(item) {
+  if (!item.image) return "";
+  return `
+    <figure class="cdm-sheet-cover">
+      <img src="${escapeHtml(resolveImg(item.image))}" alt="${escapeHtml(item.title)}">
+      <figcaption>配图 / ${escapeHtml(item.title)}</figcaption>
+      <button class="cover-replace-btn" type="button" data-edit-article-cover="${escapeHtml(item.id)}">${icon("image")}<span>更换配图</span></button>
+    </figure>
+  `;
+}
+
+function deskLetterList(item) {
+  if (!item.comments.length) {
+    return `<p style="margin:0;font:400 13px/1.8 var(--cn);color:var(--desk-ink-soft)">还没有市民来信，成为第一位投递者。</p>`;
+  }
+  return item.comments.map((c, idx) => {
+    const linkedChar = getCharacterById(c.charId);
+    return `
+      <article class="desk-letter">
+        <div class="desk-letter-head">
+          <strong>${escapeHtml(c.author || "匿名市民")}</strong>
+          <span>${escapeHtml(c.role || "读者")}</span>
+          ${linkedChar ? `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(linkedChar.id)}">${icon("link")}${escapeHtml(linkedChar.label)}</span>` : ""}
+          <span>${escapeHtml(c.time || "刚刚")}</span>
+          <span class="desk-letter-actions">
+            <button class="desk-mini-btn" type="button" data-like-comment="${idx}">${icon("heart")} ${c.likes || 0}</button>
+            <button class="desk-mini-btn" type="button" data-delete-comment="${idx}">${icon("trash")} 删除</button>
+          </span>
+        </div>
+        <p>${escapeHtml(c.content)}</p>
+      </article>
+    `;
+  }).join("");
+}
+
+function bbsFloorList(item) {
+  if (!item.comments.length) {
+    return `<div class="bbs-empty">还没有人跟帖，来抢占 #2L 沙发吧。</div>`;
+  }
+  return item.comments.map((c, idx) => {
+    const linkedChar = getCharacterById(c.charId);
+    return `
+      <article class="bbs-floor-card">
+        <div class="bbs-floor-head">
+          <span class="bbs-author-wrap">
+            <span class="bbs-floor-num">#${idx + 2}L</span>
+            <strong>${escapeHtml(c.author || "匿名市民")}</strong>
+            <span class="bbs-role-tag">${escapeHtml(c.role || "市民")}</span>
+            ${linkedChar ? `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(linkedChar.id)}">${icon("link")}${escapeHtml(linkedChar.label)}</span>` : ""}
+            <span>${escapeHtml(c.time || "刚刚")}</span>
+          </span>
+          <span class="bbs-floor-actions">
+            <button class="desk-mini-btn" type="button" data-like-comment="${idx}">${icon("heart")} ${c.likes || 0}</button>
+            <button class="desk-mini-btn" type="button" data-delete-comment="${idx}">${icon("trash")} 删除</button>
+          </span>
+        </div>
+        <p>${escapeHtml(c.content)}</p>
+      </article>
+    `;
+  }).join("");
+}
+
+function replyFormHtml(item, variant) {
+  const paper = variant === "desk";
+  const charOptionsHtml = `<option value="">匿名市民 / 自定义昵称</option>` + (DATA.characters || []).map(
+    c => `<option value="${escapeHtml(c.id)}">以角色身份回帖：${escapeHtml(getCharacterDisplayName(c))}</option>`
+  ).join("");
+
+  return `
+    <form class="bbs-reply-box${paper ? " bbs-reply-box--paper" : ""}" id="bbs-reply-form">
+      <div class="bbs-reply-head">
+        <strong>${paper ? "投递读者来信" : "发表街头跟帖"}</strong>
+        <span>${paper ? "LETTERS TO THE CITY DESK" : "POST REPLY // NIGHT BBS"}</span>
+      </div>
+      <div class="form-grid" style="margin-bottom:10px">
+        <div class="form-field">
+          <label for="reply-char-select">回复身份（可联动角色档案）</label>
+          <select class="form-select" id="reply-char-select">${charOptionsHtml}</select>
+        </div>
+        <div class="form-field">
+          <label for="reply-author-input">昵称与身份铭牌</label>
+          <div style="display:flex;gap:6px">
+            <input class="form-input" id="reply-author-input" type="text" placeholder="昵称" value="夜行市民">
+            <input class="form-input" id="reply-role-input" type="text" placeholder="铭牌" value="匿名市民" style="max-width:120px">
+          </div>
+        </div>
+      </div>
+      <div class="form-field" style="margin-bottom:12px">
+        <label for="reply-content-input">内容</label>
+        <textarea class="form-textarea" id="reply-content-input" placeholder="${paper ? "写下你对这篇报道的看法…" : "输入跟帖内容…"}" style="min-height:76px" required></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="button button-primary" type="submit"><span>${paper ? "投递" : "发送回帖"}</span><b>${icon("arrowRight")}</b></button>
+      </div>
+    </form>
+  `;
+}
+
+function relatedBlock(item, related) {
+  if (!related.length) return "";
+  const isForum = isForumPost(item);
+  return `
+    <section class="news-related">
+      <header class="news-block-head${isForum ? " news-block-head--bbs" : ""}">
+        <span class="news-block-tag">${isForum ? "MORE THREADS" : "MORE CLIPPINGS"}</span>
+        <h3 class="news-block-title">${isForum ? "其他街头热帖" : "其他城市剪报"}</h3>
+      </header>
+      <div class="${isForum ? "bbs-thread-list" : "desk-brief-list"}">
+        ${related.map(isForum ? bbsThreadRow : cityDeskBrief).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function articleToolbar(item) {
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+      <a class="article-back" href="${window.CHIRAKA_SPA_MODE ? "#news" : "news.html"}" data-spa-nav="news">${icon("arrowLeft")} 返回新闻与街头论坛</a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="button button-ghost" type="button" id="like-main-post-btn" style="padding:8px 14px"><span>${icon("heart")} 点赞 (${item.likes || 0})</span></button>
+        <button class="button button-primary admin-only" type="button" data-edit-article="${escapeHtml(item.id)}"><span>${icon("edit")} 编辑主帖 / 关联角色</span></button>
+      </div>
+    </div>
+  `;
+}
+
+function cityDeskArticleView(item, related) {
+  return `
+    <div class="article-desk">
+      ${articleToolbar(item)}
+      <article class="cdm-sheet">
+        <div class="cdm-sheet-masthead">
+          <span>CHIRAKA CITY DESK</span>
+          <span>VOL.01 · 西海岸晚报 · ${escapeHtml(item.date)}</span>
+        </div>
+        <p class="cdm-kicker" style="margin:14px 0 0">${icon("quote")} ${escapeHtml(item.category || "报道")} · 官方调查报道</p>
+        <h1>${wrapPendingHtml(item.title, `data-edit-article="${escapeHtml(item.id)}"`)}</h1>
+        <p class="cdm-sheet-standfirst">${wrapPendingHtml(item.summary, `data-edit-article="${escapeHtml(item.id)}"`)}</p>
+        <div class="cdm-sheet-byline">
+          <span>BY ${wrapPendingHtml(item.author, `data-edit-article="${escapeHtml(item.id)}"`)} / ${escapeHtml(item.authorRole || "官方记者")}</span>
+          <span>${wrapPendingHtml(item.date, `data-edit-article="${escapeHtml(item.id)}"`)}</span>
+          <span>浏览 ${newsCount(item.views)}</span>
+          ${renderRelatedCharacterPills(item.relatedCharacters)}
+        </div>
+        ${articleCoverFigure(item)}
+        <div class="cdm-sheet-body">
+          ${(item.body || ["待补充"]).map(p => `<p>${wrapPendingHtml(p, `data-edit-article="${escapeHtml(item.id)}"`)}</p>`).join("")}
+        </div>
+
+        <section class="desk-replies" aria-label="读者来信">
+          <div class="desk-replies-head">
+            <span>READER REPLIES</span>
+            <strong>读者来信与市民跟帖</strong>
+            <small>${item.comments.length} 封</small>
+          </div>
+          ${deskLetterList(item)}
+          <div style="margin-top:16px">${replyFormHtml(item, "desk")}</div>
+        </section>
+      </article>
+      ${relatedBlock(item, related)}
+    </div>
+  `;
+}
+
+function bbsThreadView(item, related) {
+  const body = (item.body || ["待补充"]).map(p => `<p>${wrapPendingHtml(p, `data-edit-article="${escapeHtml(item.id)}"`)}</p>`).join("");
+  const cover = item.image
+    ? `<figure style="margin:12px 0 0;border:1px solid var(--bbs-line);overflow:hidden;position:relative">
+         <img src="${escapeHtml(resolveImg(item.image))}" alt="${escapeHtml(item.title)}" style="display:block;width:100%;max-height:340px;object-fit:cover">
+         <button class="cover-replace-btn" type="button" data-edit-article-cover="${escapeHtml(item.id)}">${icon("image")}<span>更换配图</span></button>
+       </figure>`
+    : "";
+
+  return `
+    <div class="article-bbs bbs-thread-view">
+      ${articleToolbar(item)}
+      <article class="bbs-thread-card">
+        <span class="bbs-avatar">${escapeHtml(newsInitial(item.author))}</span>
+        <div>
+          <div class="bbs-thread-card-meta">
+            <span class="bbs-handle">@${escapeHtml(item.author || "匿名市民")}</span>
+            <span class="tag-line tag-line--ident">${escapeHtml(item.authorRole || "匿名市民")}</span>
+            <span class="tag-line tag-line--thread">#${newsThreadCode(item.id)}</span>
+            <span class="tag-line tag-line--board">/ ${escapeHtml(item.category || "街头论坛")}</span>
+            <span class="bbs-time">${escapeHtml(item.date)}</span>
+          </div>
+          <h1>${wrapPendingHtml(item.title, `data-edit-article="${escapeHtml(item.id)}"`)}</h1>
+          <div class="bbs-thread-sign">
+            <span class="bbs-stat">${icon("eye")} ${newsCount(item.views)}</span>
+            <span class="bbs-stat">${icon("heart")} ${item.likes || 0}</span>
+            <span class="bbs-stat">${icon("comment")} ${item.comments.length}</span>
+            ${renderRelatedCharacterPills(item.relatedCharacters)}
+          </div>
+        </div>
+      </article>
+
+      <article class="bbs-floor-card bbs-floor-card--op">
+        <div class="bbs-floor-head">
+          <span class="bbs-author-wrap">
+            <span class="bbs-floor-num">#1L</span>
+            <strong>${wrapPendingHtml(item.author, `data-edit-article="${escapeHtml(item.id)}"`)}</strong>
+            <span class="bbs-role-tag">楼主</span>
+            <span>${escapeHtml(item.date)}</span>
+          </span>
+        </div>
+        <div style="font:400 14px/1.85 var(--cn);color:rgba(252,246,255,.92)">${body}</div>
+        ${cover}
+      </article>
+
+      <section class="bbs-comments-section" aria-label="街头跟帖盖楼">
+        <header class="bbs-comments-head">
+          <span class="news-block-tag">NIGHT BBS REPLIES</span>
+          <strong>街头跟帖盖楼</strong>
+          <small>${item.comments.length} 层 · 支持市民或角色身份跟帖</small>
+        </header>
+        <div class="bbs-floor-list">${bbsFloorList(item)}</div>
+        ${replyFormHtml(item, "bbs")}
+      </section>
+
+      ${relatedBlock(item, related)}
+    </div>
+  `;
+}
+
 function renderArticleById(id) {
   const host = $("#article-detail");
   if (!host) return;
@@ -1772,111 +2104,12 @@ function renderArticleById(id) {
   currentArticleId = item.id;
   if (!Array.isArray(item.comments)) item.comments = [];
 
-  const isForum = item.postType === "forum";
-  const related = DATA.news.filter(entry => entry.id !== item.id).slice(0, 2);
-  const coverBlock = item.image
-    ? `<div style="position:relative;margin:14px 0 18px;border:2px solid #fff;border-radius:2px;overflow:hidden;max-height:380px">
-         <img src="${escapeHtml(resolveImg(item.image))}" alt="${escapeHtml(item.title)}" style="width:100%;height:100%;object-fit:cover">
-         <button class="cover-replace-btn" type="button" data-edit-article-cover="${escapeHtml(item.id)}">${icon("image")}<span>更换配图</span></button>
-       </div>`
-    : "";
+  const isForum = isForumPost(item);
+  const related = DATA.news
+    .filter(entry => entry.id !== item.id && isForumPost(entry) === isForum)
+    .slice(0, 2);
 
-  const commentsHtml = item.comments.map((c, idx) => {
-    const linkedChar = getCharacterById(c.charId);
-    return `
-      <div class="bbs-floor-card">
-        <div class="bbs-floor-head">
-          <div class="bbs-author-wrap">
-            <span class="bbs-floor-num">#${idx + 2}L</span>
-            <strong style="color:#fff;font-size:14px">${escapeHtml(c.author || "匿名市民")}</strong>
-            <span class="bbs-role-tag">${escapeHtml(c.role || "市民")}</span>
-            ${linkedChar ? `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(linkedChar.id)}">${icon("link")} 角色卷宗：${escapeHtml(linkedChar.label)} ${icon("external")}</span>` : ""}
-            <small style="color:rgba(255,235,245,0.6)">${escapeHtml(c.time || "刚刚")}</small>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button class="admin-tool-btn" type="button" data-like-comment="${idx}" style="padding:3px 9px;font-size:11px">${icon("heart")} 赞 (${c.likes || 0})</button>
-            <button class="admin-edit-chip" type="button" data-delete-comment="${idx}">× 删除此楼</button>
-          </div>
-        </div>
-        <p style="margin:0;font-size:13.5px;line-height:1.65;color:rgba(252,246,255,0.92)">${escapeHtml(c.content)}</p>
-      </div>
-    `;
-  }).join("");
-
-  const charOptionsHtml = `<option value="">匿名市民 / 自定义昵称</option>` + (DATA.characters || []).map(
-    c => `<option value="${escapeHtml(c.id)}">以角色身份回帖：${escapeHtml(getCharacterDisplayName(c))}</option>`
-  ).join("");
-
-  host.innerHTML = `
-    <article class="article">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <a class="article-back" href="${window.CHIRAKA_SPA_MODE ? "#news" : "news.html"}" data-spa-nav="news">${icon("arrowLeft")} 返回新闻与街头论坛</a>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="button button-ghost" type="button" id="like-main-post-btn" style="padding:8px 14px"><span>${icon("heart")} 点赞主帖 (${item.likes || 0})</span></button>
-          <button class="button button-primary admin-only" type="button" data-edit-article="${escapeHtml(item.id)}"><span>${icon("edit")} 编辑主帖 / 关联角色</span></button>
-        </div>
-      </div>
-
-      <header style="margin:18px 0">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <span class="post-type-badge ${isForum ? "is-forum" : "is-news"}">${isForum ? icon("comment") + " 街头匿名论坛 · NIGHT BBS" : icon("news") + " 官方调查报道 · CITY DESK"}</span>
-          <span class="story-tag">${escapeHtml(item.category)}</span>
-          <span class="bbs-floor-num">#1L 楼主</span>
-          ${renderRelatedCharacterPills(item.relatedCharacters)}
-        </div>
-        <h1 style="margin:10px 0 8px;font:900 30px/1.25 var(--cn)">${wrapPendingHtml(item.title, `data-edit-article="${escapeHtml(item.id)}"`)}</h1>
-        <p style="color:var(--gold);margin:0;font-weight:700;font-size:13px">
-          ${icon("user")} ${wrapPendingHtml(item.author, `data-edit-article="${escapeHtml(item.id)}"`)} (${escapeHtml(item.authorRole || "楼主/记者")}) · ${icon("clock")} ${wrapPendingHtml(item.date, `data-edit-article="${escapeHtml(item.id)}"`)} · ${icon("sparkle")} 浏览 ${item.views || 320}
-        </p>
-      </header>
-
-      ${coverBlock}
-
-      <div style="padding:18px 0;border-top:1px dashed rgba(255,255,255,.28);border-bottom:1px dashed rgba(255,255,255,.28);margin-bottom:22px;font-size:15px;line-height:1.8">
-        ${(item.body || ["待补充"]).map(p => `<p>${wrapPendingHtml(p, `data-edit-article="${escapeHtml(item.id)}"`)}</p>`).join("")}
-      </div>
-
-      <!-- 街头跟帖盖楼区 -->
-      <section class="bbs-comments-section" aria-label="街头跟帖盖楼">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <h2 style="margin:0;font:900 19px/1.2 var(--cn);color:var(--cyan)">${icon("comment")} 街头跟帖盖楼 · NIGHT BBS REPLIES (${item.comments.length})</h2>
-          <small style="color:rgba(255,235,245,0.7)">支持以市民或角色身份跟帖互动</small>
-        </div>
-
-        <div class="bbs-floor-list">
-          ${commentsHtml || `<div style="padding:16px;background:#19102e;border:1px dashed rgba(255,255,255,0.22);color:rgba(255,235,245,0.7)">还没有人跟帖，来抢占 #2L 沙发吧！</div>`}
-        </div>
-
-        <form class="bbs-reply-box" id="bbs-reply-form">
-          <h3 style="margin:0 0 12px;font:800 15px/1.2 var(--cn);color:var(--gold)">${icon("sparkle")} 发表街头跟帖 / 盖楼回复</h3>
-          <div class="form-grid" style="margin-bottom:10px">
-            <div class="form-field">
-              <label for="reply-char-select">选择回帖身份（可联动角色档案）</label>
-              <select class="form-select" id="reply-char-select">${charOptionsHtml}</select>
-            </div>
-            <div class="form-field">
-              <label for="reply-author-input">显示昵称 &amp; 身份铭牌</label>
-              <div style="display:flex;gap:6px">
-                <input class="form-input" id="reply-author-input" type="text" placeholder="昵称（如：夜行市民）" value="夜行市民">
-                <input class="form-input" id="reply-role-input" type="text" placeholder="铭牌（如：吃瓜路人）" value="匿名市民" style="max-width:120px">
-              </div>
-            </div>
-          </div>
-          <div class="form-field" style="margin-bottom:12px">
-            <textarea class="form-textarea" id="reply-content-input" placeholder="输入跟帖内容..." style="min-height:70px" required></textarea>
-          </div>
-          <div style="display:flex;justify-content:flex-end">
-            <button class="button button-primary" type="submit"><span>发送回帖 // POST REPLY</span><b>${icon("arrowRight")}</b></button>
-          </div>
-        </form>
-      </section>
-
-      <section style="margin-top:28px">
-        <h2 style="font:800 18px/1.2 var(--cn);margin-bottom:12px">其他热门剪报与论坛帖</h2>
-        <div class="news-list">${related.map(newsRow).join("")}</div>
-      </section>
-    </article>
-  `;
+  host.innerHTML = isForum ? bbsThreadView(item, related) : cityDeskArticleView(item, related);
 
   $("#like-main-post-btn", host)?.addEventListener("click", () => {
     item.likes = (item.likes || 0) + 1;
@@ -1941,14 +2174,6 @@ function renderArticleById(id) {
 
   $$("[data-edit-article-cover]", host).forEach(btn => {
     btn.addEventListener("click", () => openEditorModal("news", item.id, "ed-news-image"));
-  });
-
-  $$("[data-edit-news]", host).forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      openEditorModal("news", btn.dataset.editNews);
-    });
   });
 
   $$("[data-jump-char]", host).forEach(pill => {

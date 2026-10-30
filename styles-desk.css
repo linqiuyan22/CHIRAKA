@@ -1,0 +1,789 @@
+/* ==========================================================================
+   CHIRAKA · City Desk（官方新闻）与 Night BBS（街头匿名论坛）
+   本文件是新闻 / 论坛组件的唯一样式来源。
+   styles.css 与 styles-v3.css 中旧版同名规则已移除，避免同一组件被多套规则反复覆盖。
+   ========================================================================== */
+
+.news-stage,
+.article-desk,
+.article-bbs {
+  --desk-paper: #f2ebdd;
+  --desk-ink: #16101f;
+  --desk-ink-soft: #5a4d63;
+  --desk-accent: #a3124f;
+  --desk-rule: rgba(22, 16, 31, 0.22);
+
+  --bbs-panel: #130e21;
+  --bbs-panel-2: #181128;
+  --bbs-line: rgba(240, 226, 255, 0.13);
+  --bbs-text: #f4ecff;
+  --bbs-dim: rgba(228, 214, 245, 0.56);
+  --bbs-faint: rgba(232, 220, 248, 0.34);
+  --bbs-magenta: #ff4d8d;
+  --bbs-cyan: #6ad6ee;
+  --bbs-orange: #ff8a49;
+}
+
+/* ---------- 分栏标题 ---------- */
+.news-block-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--bbs-line);
+}
+.news-block-tag {
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--bbs-magenta);
+}
+.news-block-head--bbs .news-block-tag { color: var(--bbs-cyan); }
+.news-block-title {
+  margin: 0;
+  font: 800 16px/1.2 var(--cn);
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.news-block-count {
+  margin-left: auto;
+  font: 600 10.5px/1 var(--body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bbs-faint);
+  white-space: nowrap;
+}
+
+.news-stage { display: flex; flex-direction: column; gap: 34px; }
+.news-stage > [hidden] { display: none; }
+
+/* Night BBS 用一层极暗的终端窗口，和纸面 City Desk 拉开距离 */
+.news-panel--bbs {
+  padding: 18px 20px 6px;
+  background: linear-gradient(180deg, rgba(10, 6, 18, 0.74), rgba(10, 6, 18, 0.46));
+  border: 1px solid rgba(240, 226, 255, 0.1);
+}
+
+/* ---------- 微型标签（细线描边，不用色块） ---------- */
+.tag-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  font: 800 9.5px/1.5 var(--body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tag-line--board { color: var(--bbs-orange); }
+.tag-line--ident { color: rgba(255, 160, 110, 0.86); border-color: rgba(255, 138, 73, 0.45); }
+.tag-line--thread { color: var(--bbs-faint); border-color: rgba(240, 226, 255, 0.18); }
+.tag-line--desk { color: var(--desk-accent); }
+
+/* ---------- City Desk：头版剪报 ---------- */
+.cdm-lead {
+  position: relative;
+  display: block;
+  padding: 20px 22px 22px;
+  background: var(--desk-paper);
+  color: var(--desk-ink);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 22px 44px -34px rgba(0, 0, 0, 0.95);
+  text-decoration: none;
+}
+.cdm-lead-masthead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 3px double var(--desk-ink);
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+.cdm-lead-vol {
+  margin-left: auto;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--desk-ink-soft);
+}
+.cdm-lead-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  gap: 22px;
+  padding-top: 16px;
+}
+.cdm-lead-art {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  background: #e4d9c6;
+  border: 1px solid var(--desk-rule);
+  overflow: hidden;
+}
+.cdm-lead-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cdm-lead-art-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(90, 77, 99, 0.75);
+  background-image: repeating-linear-gradient(135deg, rgba(22, 16, 31, 0.055) 0 1px, transparent 1px 9px);
+}
+.cdm-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--desk-rule);
+}
+.cdm-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--desk-accent);
+}
+.cdm-kicker::before {
+  content: "";
+  width: 24px;
+  height: 2px;
+  background: currentColor;
+  flex: none;
+}
+.cdm-lead h2 {
+  margin: 10px 0 8px;
+  font: 900 29px/1.24 var(--cn);
+  letter-spacing: -0.005em;
+}
+.cdm-standfirst {
+  margin: 0 0 14px;
+  font: 400 13.5px/1.75 var(--cn);
+  color: var(--desk-ink-soft);
+}
+.cdm-byline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--desk-rule);
+  font: 700 10.5px/1.4 var(--body);
+  letter-spacing: 0.06em;
+  color: #3a3040;
+  text-transform: uppercase;
+}
+.cdm-lead-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.cdm-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 700 10.5px/1 var(--body);
+  letter-spacing: 0.06em;
+  color: var(--desk-ink-soft);
+}
+.cdm-read {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 800 10.5px/1 var(--body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--desk-accent);
+}
+.cdm-lead:hover .cdm-read { gap: 10px; }
+.cdm-lead .admin-card-floating,
+.cdm-lead-art .cover-replace-btn { z-index: 16; }
+.cdm-lead .char-link-pill {
+  border-color: rgba(22, 16, 31, 0.28);
+  color: #3a3040;
+}
+.cdm-lead .char-link-pill:hover {
+  border-color: var(--desk-accent);
+  color: var(--desk-accent);
+}
+
+/* ---------- City Desk：次级报道索引 ---------- */
+.desk-brief-list {
+  margin-top: 20px;
+  border-top: 1px solid var(--bbs-line);
+}
+.cdm-brief {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 15px 4px;
+  border-bottom: 1px solid var(--bbs-line);
+  text-decoration: none;
+  transition: background 0.16s ease;
+}
+.cdm-brief:hover { background: rgba(255, 255, 255, 0.028); }
+.cdm-brief-no {
+  padding-top: 3px;
+  font: 800 15px/1 var(--body);
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.2);
+  transition: color 0.16s ease;
+}
+.cdm-brief:hover .cdm-brief-no { color: var(--bbs-magenta); }
+.cdm-brief-copy { min-width: 0; }
+.cdm-brief-copy strong {
+  display: block;
+  font: 700 15px/1.45 var(--cn);
+  color: #fff;
+}
+.cdm-brief-copy small {
+  display: block;
+  margin-top: 5px;
+  font: 400 12.5px/1.65 var(--cn);
+  color: var(--bbs-dim);
+}
+.cdm-brief-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font: 700 10px/1 var(--body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bbs-faint);
+}
+.cdm-brief-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font: 700 10.5px/1 var(--body);
+  color: var(--bbs-dim);
+  white-space: nowrap;
+}
+
+/* ---------- Night BBS：帖子列表 ---------- */
+.bbs-thread-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--bbs-line);
+}
+.bbs-thread {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px 16px 16px 14px;
+  border-bottom: 1px solid var(--bbs-line);
+  text-decoration: none;
+  background: transparent;
+  transition: background 0.18s ease;
+}
+.bbs-thread::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: var(--bbs-cyan);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.bbs-thread:hover { background: rgba(255, 255, 255, 0.03); }
+.bbs-thread:hover::before { opacity: 0.85; }
+.bbs-avatar {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: #1b1330;
+  border: 1px solid rgba(240, 226, 255, 0.18);
+  font: 800 17px/1 var(--cn);
+  color: rgba(246, 238, 255, 0.78);
+  overflow: hidden;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.bbs-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 4px);
+  pointer-events: none;
+}
+.bbs-thread:hover .bbs-avatar {
+  border-color: rgba(106, 214, 238, 0.6);
+  color: #fff;
+}
+.bbs-thread-main { min-width: 0; }
+.bbs-thread-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font: 700 11px/1.4 var(--body);
+}
+.bbs-handle {
+  color: var(--bbs-cyan);
+  letter-spacing: 0.02em;
+}
+.bbs-time {
+  margin-left: auto;
+  font: 600 10.5px/1 var(--body);
+  letter-spacing: 0.08em;
+  color: var(--bbs-faint);
+  white-space: nowrap;
+}
+.bbs-thread-title {
+  margin: 8px 0 6px;
+  font: 700 15.5px/1.45 var(--cn);
+  color: #fff;
+}
+.bbs-thread-excerpt {
+  margin: 0;
+  font: 400 12.5px/1.65 var(--cn);
+  color: var(--bbs-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bbs-thread-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font: 700 10.5px/1 var(--body);
+  letter-spacing: 0.06em;
+  color: var(--bbs-faint);
+}
+.bbs-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------- 角色联动 pill（两种语境共用一个组件） ---------- */
+.char-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border: 1px solid rgba(240, 226, 255, 0.22);
+  border-radius: 0;
+  background: transparent;
+  color: rgba(246, 238, 255, 0.72);
+  font: 700 10px/1.4 var(--body);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.char-link-pill:hover,
+.char-link-pill:focus-visible {
+  border-color: var(--bbs-magenta);
+  color: #fff;
+}
+
+/* ==========================================================================
+   City Desk：报道详情（报纸内页）
+   ========================================================================== */
+.article-desk {
+  max-width: 940px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.cdm-sheet {
+  max-width: none;
+  margin: 0;
+  padding: 30px 38px 36px;
+  background: var(--desk-paper);
+  color: var(--desk-ink);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 26px 50px -38px rgba(0, 0, 0, 0.95);
+}
+.cdm-sheet-masthead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 9px;
+  border-bottom: 3px double var(--desk-ink);
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+.cdm-sheet-masthead span:nth-child(2) { margin-left: auto; font-weight: 600; letter-spacing: 0.14em; color: var(--desk-ink-soft); }
+.cdm-sheet h1 {
+  margin: 18px 0 12px;
+  font: 900 34px/1.22 var(--cn);
+  letter-spacing: -0.008em;
+}
+.cdm-sheet-standfirst {
+  margin: 0 0 16px;
+  font: 400 15.5px/1.8 var(--cn);
+  color: var(--desk-ink-soft);
+}
+.cdm-sheet-byline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 9px 0;
+  border-top: 1px solid var(--desk-rule);
+  border-bottom: 1px solid var(--desk-rule);
+  font: 700 10.5px/1.4 var(--body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3040;
+}
+.cdm-sheet-cover {
+  margin: 20px 0 22px;
+  border: 1px solid var(--desk-rule);
+}
+.cdm-sheet-cover img {
+  display: block;
+  width: 100%;
+  max-height: 430px;
+  object-fit: cover;
+}
+.cdm-sheet-cover figcaption {
+  padding: 8px 10px;
+  border-top: 1px solid var(--desk-rule);
+  font: 600 10.5px/1.5 var(--body);
+  letter-spacing: 0.08em;
+  color: var(--desk-ink-soft);
+}
+.cdm-sheet-body { margin-bottom: 6px; }
+.cdm-sheet-body p {
+  margin: 0 0 1.05em;
+  font: 400 15.5px/1.95 var(--cn);
+  text-align: justify;
+}
+.cdm-sheet-body > p:first-of-type {
+  font-size: 16px;
+  font-weight: 600;
+}
+.cdm-sheet-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+/* 报纸里的读者来信 */
+.desk-replies {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 3px double var(--desk-ink);
+}
+.desk-replies-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--desk-accent);
+}
+.desk-replies-head strong {
+  font: 800 16px/1.2 var(--cn);
+  letter-spacing: 0.02em;
+  color: var(--desk-ink);
+}
+.desk-replies-head small {
+  margin-left: auto;
+  font: 600 10.5px/1 var(--body);
+  letter-spacing: 0.1em;
+  color: var(--desk-ink-soft);
+  text-transform: none;
+}
+.desk-letter {
+  padding: 13px 0;
+  border-bottom: 1px dashed var(--desk-rule);
+}
+.desk-letter-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font: 700 10.5px/1.4 var(--body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-ink-soft);
+}
+.desk-letter-head strong {
+  font: 700 13px/1.4 var(--cn);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--desk-ink);
+}
+.desk-letter p {
+  margin: 8px 0 0;
+  font: 400 14px/1.8 var(--cn);
+  color: #2a2233;
+}
+.desk-letter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+.desk-mini-btn {
+  padding: 3px 9px;
+  border: 1px solid var(--desk-rule);
+  background: transparent;
+  color: var(--desk-ink-soft);
+  font: 700 10px/1.4 var(--body);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.desk-mini-btn:hover { border-color: var(--desk-accent); color: var(--desk-accent); }
+
+/* ==========================================================================
+   Night BBS：帖子详情（楼层）
+   ========================================================================== */
+.bbs-thread-view { max-width: 920px; margin: 0 auto; }
+.bbs-thread-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.bbs-thread-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--bbs-panel);
+  border: 1px solid var(--bbs-line);
+}
+.bbs-thread-card .bbs-avatar { width: 58px; height: 58px; font-size: 21px; }
+.bbs-thread-card h1 {
+  margin: 8px 0 0;
+  font: 800 28px/1.32 var(--cn);
+  color: #fff;
+}
+.bbs-thread-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font: 700 11px/1.4 var(--body);
+}
+.bbs-thread-sign {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bbs-line);
+  font: 700 10.5px/1 var(--body);
+  letter-spacing: 0.06em;
+  color: var(--bbs-faint);
+}
+
+.bbs-comments-section { margin-top: 26px; }
+.bbs-comments-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--bbs-line);
+}
+.bbs-comments-head .news-block-tag { color: var(--bbs-cyan); }
+.bbs-comments-head strong {
+  font: 800 15px/1.2 var(--cn);
+  color: #fff;
+}
+.bbs-comments-head small {
+  margin-left: auto;
+  font: 600 10.5px/1 var(--body);
+  letter-spacing: 0.08em;
+  color: var(--bbs-faint);
+}
+.bbs-floor-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.bbs-floor-card {
+  padding: 14px 16px;
+  background: var(--bbs-panel);
+  border: 1px solid var(--bbs-line);
+  border-left: 2px solid rgba(106, 214, 238, 0.32);
+}
+.bbs-floor-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed rgba(240, 226, 255, 0.14);
+  font: 600 10.5px/1.4 var(--body);
+  letter-spacing: 0.06em;
+  color: var(--bbs-faint);
+}
+.bbs-floor-head strong {
+  font: 700 13px/1.4 var(--cn);
+  letter-spacing: 0;
+  color: #fff;
+}
+.bbs-author-wrap { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.bbs-floor-num {
+  padding: 2px 7px;
+  border: 1px solid rgba(106, 214, 238, 0.45);
+  color: var(--bbs-cyan);
+  font: 800 10px/1.5 var(--body);
+  letter-spacing: 0.1em;
+}
+.bbs-role-tag {
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 77, 141, 0.42);
+  color: #ffa8c6;
+  font: 800 9.5px/1.5 var(--body);
+  letter-spacing: 0.1em;
+}
+.bbs-floor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.bbs-floor-card p {
+  margin: 0;
+  font: 400 13.5px/1.75 var(--cn);
+  color: rgba(252, 246, 255, 0.92);
+}
+.bbs-empty {
+  padding: 16px;
+  border: 1px dashed rgba(240, 226, 255, 0.18);
+  color: var(--bbs-dim);
+  font: 400 12.5px/1.6 var(--cn);
+}
+
+/* 回帖表单 */
+.bbs-reply-box {
+  padding: 16px 18px;
+  background: var(--bbs-panel-2);
+  border: 1px solid var(--bbs-line);
+}
+.bbs-reply-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font: 800 10px/1 var(--body);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bbs-cyan);
+}
+.bbs-reply-head strong {
+  font: 800 14px/1.2 var(--cn);
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+/* ---------- 相关阅读 ---------- */
+.news-related { margin-top: 30px; }
+
+/* 报纸里的角色联动 pill 需要深墨色 */
+.cdm-sheet .char-link-pill {
+  border-color: rgba(22, 16, 31, 0.28);
+  color: #3a3040;
+}
+.cdm-sheet .char-link-pill:hover,
+.cdm-sheet .char-link-pill:focus-visible {
+  border-color: var(--desk-accent);
+  color: var(--desk-accent);
+}
+
+/* 报纸里的回帖表单 */
+.bbs-reply-box--paper {
+  background: #fbf6ec;
+  border: 1px solid var(--desk-rule);
+}
+.bbs-reply-box--paper .bbs-reply-head { color: var(--desk-accent); }
+.bbs-reply-box--paper .bbs-reply-head strong { color: var(--desk-ink); }
+.bbs-reply-box--paper label {
+  color: var(--desk-ink-soft);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.bbs-reply-box--paper .form-input,
+.bbs-reply-box--paper .form-select,
+.bbs-reply-box--paper .form-textarea {
+  background: #fffdf8;
+  border-color: rgba(22, 16, 31, 0.22);
+  color: var(--desk-ink);
+}
+.bbs-reply-box--paper .form-input::placeholder,
+.bbs-reply-box--paper .form-textarea::placeholder {
+  color: rgba(90, 77, 99, 0.7);
+}
+.bbs-reply-box--paper .form-textarea:focus,
+.bbs-reply-box--paper .form-input:focus,
+.bbs-reply-box--paper .form-select:focus {
+  border-color: var(--desk-accent);
+  outline: none;
+}
+
+/* 楼主楼层用更实的左侧标记 */
+.bbs-floor-card--op {
+  margin-top: 12px;
+  border-left-color: rgba(255, 77, 141, 0.55);
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 860px) {
+  .news-block-head { flex-wrap: wrap; row-gap: 6px; }
+  .news-block-count { margin-left: 0; flex: 0 0 100%; }
+  .bbs-comments-head small { margin-left: 0; flex: 0 0 100%; }
+  .cdm-lead { padding: 16px 16px 18px; }
+  .cdm-lead-grid { grid-template-columns: 1fr; gap: 16px; }
+  .cdm-copy {
+    padding-left: 0;
+    padding-top: 14px;
+    border-left: 0;
+    border-top: 1px solid var(--desk-rule);
+  }
+  .cdm-lead h2 { font-size: 23px; }
+  .cdm-brief { grid-template-columns: 34px minmax(0, 1fr); }
+  .cdm-brief-side { display: none; }
+  .bbs-thread { grid-template-columns: 38px minmax(0, 1fr); padding: 14px 10px; }
+  .bbs-avatar { width: 38px; height: 38px; font-size: 14px; }
+  .bbs-thread-card { grid-template-columns: 46px minmax(0, 1fr); padding: 14px; }
+  .bbs-thread-card .bbs-avatar { width: 46px; height: 46px; font-size: 17px; }
+  .bbs-thread-card h1 { font-size: 21px; }
+  .cdm-sheet { padding: 20px 18px 24px; }
+  .cdm-sheet h1 { font-size: 24px; }
+  .bbs-time { margin-left: 0; }
+}
