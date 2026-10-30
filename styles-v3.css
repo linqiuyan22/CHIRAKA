@@ -2562,8 +2562,29 @@ label .icon + span,
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1160px) {
   .header-radio { display: none; }
+  .header-auth-btn { padding: 0 10px; }
+  .header-auth-btn span { max-width: 92px; }
+  .auth-label-en { display: none; }
+}
+
+@media (max-width: 1010px) {
+  .site-header {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 16px 0;
+    gap: 8px;
+  }
+  .brand { padding-bottom: 8px; }
+  .header-tools { margin-left: auto; padding-bottom: 8px; }
+  .main-nav.top-drawer-nav {
+    order: 3;
+    flex: 0 0 100%;
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
   .header-auth-btn { padding: 0 10px; }
   .header-auth-btn span { max-width: 72px; }
 }

@@ -512,7 +512,9 @@ function updateAuthUI() {
 
   const statusText = $("#auth-status-text");
   if (statusText) {
-    statusText.textContent = isAdmin ? "管理员 · ADMIN" : "访客模式 · GUEST";
+    statusText.innerHTML = isAdmin
+      ? `管理员<span class="auth-label-en"> · ADMIN</span>`
+      : `访客模式<span class="auth-label-en"> · GUEST</span>`;
   }
 
   const guestCard = $("#auth-guest-card");
