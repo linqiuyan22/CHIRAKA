@@ -125,7 +125,7 @@ window.CHIRAKA_DATA = {
       "appearanceImages": [],
       "storylines": [
         {
-          "stage": "序章 · 初入弃城",
+          "stage": "序章 · 初入灷城",
           "title": "待补充故事标题",
           "content": "待补充角色主线或支线故事记录。"
         }

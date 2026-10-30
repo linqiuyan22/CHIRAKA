@@ -13,6 +13,7 @@
 
 const CONTENT_KEY = "content.json";
 const PASS_KEY = "passcode";
+const SAVED_AT_KEY = "savedAt";
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -56,7 +57,14 @@ async function handleApi(path, request, env) {
     if (request.method === "GET") {
       const raw = await env.CHIRAKA_CONTENT.get(CONTENT_KEY);
       if (!raw) return json({ ok: false, empty: true }, 404);
-      return new Response(raw, { headers: JSON_HEADERS });
+      const savedAt = (await env.CHIRAKA_CONTENT.get(SAVED_AT_KEY)) || "";
+      return new Response(raw, {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store",
+          "x-chiraka-saved-at": savedAt
+        }
+      });
     }
 
     if (request.method === "POST") {
@@ -70,7 +78,9 @@ async function handleApi(path, request, env) {
       if (text.length > 4000000) return json({ ok: false, error: "数据过大" }, 413);
 
       await env.CHIRAKA_CONTENT.put(CONTENT_KEY, text);
-      return json({ ok: true, savedAt: new Date().toISOString(), bytes: text.length });
+      const savedAt = new Date().toISOString();
+      await env.CHIRAKA_CONTENT.put(SAVED_AT_KEY, savedAt);
+      return json({ ok: true, savedAt, bytes: text.length });
     }
 
     return json({ ok: false, error: "method not allowed" }, 405);
@@ -99,6 +109,61 @@ async function handleApi(path, request, env) {
   return json({ ok: false, error: "not found" }, 404);
 }
 
+async function handleNetease(url) {
+  const songId = (url.searchParams.get("id") || "").trim();
+  const playlistId = (url.searchParams.get("playlist") || "").trim();
+  const headers = {
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+    referer: "https://music.163.com/",
+    accept: "application/json, text/plain, */*"
+  };
+
+  try {
+    if (/^\d+$/.test(songId)) {
+      const api = `https://music.163.com/api/song/detail/?id=${songId}&ids=%5B${songId}%5D`;
+      const res = await fetch(api, { headers });
+      const data = await res.json();
+      const song = data?.songs?.[0];
+      if (!song) return json({ ok: false, error: "没解析到这首歌，检查一下链接" }, 404);
+      const durationMs = song.duration || 0;
+      const mm = String(Math.floor(durationMs / 60000)).padStart(2, "0");
+      const ss = String(Math.floor((durationMs % 60000) / 1000)).padStart(2, "0");
+      return json({
+        ok: true,
+        kind: "song",
+        id: songId,
+        title: song.name || "",
+        artist: (song.artists || []).map(a => a.name).filter(Boolean).join(" / "),
+        cover: song.album?.picUrl || "",
+        duration: durationMs ? `${mm}:${ss}` : "",
+        album: song.album?.name || ""
+      });
+    }
+
+    if (/^\d+$/.test(playlistId)) {
+      const api = `https://music.163.com/api/v6/playlist/detail?id=${playlistId}&n=1000`;
+      const res = await fetch(api, { headers });
+      const data = await res.json();
+      const pl = data?.playlist;
+      if (!pl) return json({ ok: false, error: "没解析到这个歌单，检查一下链接" }, 404);
+      return json({
+        ok: true,
+        kind: "playlist",
+        id: playlistId,
+        title: pl.name || "",
+        trackCount: pl.trackCount || (pl.tracks || []).length || 0,
+        cover: pl.coverImgUrl || "",
+        creator: pl.creator?.nickname || ""
+      });
+    }
+
+    return json({ ok: false, error: "链接里没找到歌曲或歌单 id" }, 400);
+  } catch (e) {
+    return json({ ok: false, error: "解析失败：" + String(e && e.message ? e.message : e) }, 502);
+  }
+}
+
 const REVALIDATE_TYPES = [
   "text/html",
   "text/css",
@@ -112,6 +177,7 @@ export default {
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
     if (path === "/api" || path.startsWith("/api/")) {
+      if (path === "/api/netease") return handleNetease(url);
       return handleApi(path, request, env);
     }
 

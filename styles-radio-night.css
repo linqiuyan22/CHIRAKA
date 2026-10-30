@@ -951,3 +951,47 @@ body.page-radio.radio-playing .ambient-blob { opacity: 0.78; }
 .rim-pulse-arc-2 {
   animation: dashMarch 14s linear infinite reverse;
 }
+
+/* ==========================================================================
+   网易云音乐：单曲内嵌播放条 + 歌单入口
+   ========================================================================== */
+.netease-slot {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.18);
+}
+.netease-slot[hidden] { display: none; }
+
+.netease-song-frame {
+  display: block;
+  width: 100%;
+  height: 86px;
+  border: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.netease-playlist-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 56, 140, 0.55);
+  background: linear-gradient(100deg, rgba(255, 56, 140, 0.18), rgba(44, 229, 255, 0.14));
+  color: #ffe6f4;
+  font: 600 12px/1.2 var(--cn);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.netease-playlist-btn:hover {
+  border-color: var(--rv-cyan);
+  background: linear-gradient(100deg, rgba(255, 56, 140, 0.28), rgba(44, 229, 255, 0.24));
+}
+
+#netease-playlist-body iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+}

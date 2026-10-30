@@ -69,7 +69,7 @@
       </div>
       <div class="admin-bar-actions">
         <button class="admin-tool-btn is-primary" id="admin-quick-add-btn" type="button">+ 新增内容</button>
-        <button class="admin-tool-btn is-gold" id="admin-backup-btn" type="button">⚙ 数据接口与备份</button>
+        <button class="admin-tool-btn is-gold" id="admin-backup-btn" type="button">⚙ 云端同步设置</button>
         <button class="admin-tool-btn is-danger" id="admin-reset-btn" type="button">↺ 恢复默认</button>
         <button class="admin-tool-btn" id="admin-logout-btn" type="button">⇄ 切回访客模式</button>
       </div>
@@ -197,6 +197,8 @@
               <span class="upnext-time" id="upnext-duration">04:15</span>
             </button>
           </div>
+
+          <div class="netease-slot" id="netease-slot" hidden></div>
         </div>
 
         <div class="sona-card sona-library-card" id="playlist">
@@ -526,7 +528,25 @@
       </header>
       <div class="modal-body" id="data-dialog-body"></div>
       <footer class="modal-foot">
-        <span style="font-size:12px;color:rgba(255,235,245,0.7)">提示：所有修改会自动保存在浏览器本地，也可随时导出为 data.js 覆盖原文件。</span>
+        <span style="font-size:12px;color:rgba(255,235,245,0.7)">提示：保存后会自动同步到云端，访客刷新即可看到。</span>
+        <button class="button button-ghost" type="button" data-close-dialog>关闭窗口</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- 4. 网易云歌单播放器弹窗 -->
+  <dialog class="chiraka-modal modal-narrow" id="netease-playlist-dialog" aria-labelledby="netease-playlist-title">
+    <div class="modal-shell">
+      <header class="modal-head">
+        <div class="modal-head-titles">
+          <p class="eyebrow">NETEASE CLOUD MUSIC</p>
+          <h2 id="netease-playlist-title">网易云歌单</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-dialog aria-label="关闭歌单">×</button>
+      </header>
+      <div class="modal-body" id="netease-playlist-body"></div>
+      <footer class="modal-foot">
+        <span style="font-size:12px;color:rgba(255,235,245,0.7)">歌单由网易云官方播放器加载，需要联网。</span>
         <button class="button button-ghost" type="button" data-close-dialog>关闭窗口</button>
       </footer>
     </div>

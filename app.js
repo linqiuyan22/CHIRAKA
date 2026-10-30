@@ -3,6 +3,7 @@ const STORAGE_DATA_KEY = "chiraka_custom_data_v2";
 const STORAGE_AUTH_KEY = "chiraka_auth_mode_v1";
 const STORAGE_PASS_KEY = "chiraka_admin_pass_v1";
 const STORAGE_API_KEY = "chiraka_remote_api_url_v1";
+const STORAGE_SAVED_AT_KEY = "chiraka_last_saved_at_v1";
 
 function safeStorageGet(key) {
   try {
@@ -184,6 +185,7 @@ async function tryLoadFromRemoteServer() {
       safeStorageSet(STORAGE_DATA_KEY, JSON.stringify(DATA));
       const syncEl = $("#admin-sync-indicator");
       if (syncEl) syncEl.textContent = "☁ 已连接远程数据接口 · 实时读写分离";
+      setSyncStatus("ok", res.headers.get("x-chiraka-saved-at") || "");
       refreshAllViews();
     }
   } catch (e) {
@@ -194,7 +196,7 @@ async function tryLoadFromRemoteServer() {
 async function syncDataToRemoteServer() {
   const apiUrl = authState.getApiUrl();
   const syncEl = $("#admin-sync-indicator");
-  if (!apiUrl || window.location.protocol === "file:") return false;
+  if (!apiUrl || window.location.protocol === "file:") return { ok: false, reason: "offline" };
   try {
     const res = await window.fetch(apiUrl, {
       method: "POST",
@@ -205,12 +207,19 @@ async function syncDataToRemoteServer() {
       body: JSON.stringify(DATA)
     });
     if (res && res.ok) {
-      if (syncEl) syncEl.textContent = "☁ 已同步写入服务器 content-data.json";
-      return true;
+      let savedAt = "";
+      try {
+        savedAt = (await res.json()).savedAt || "";
+      } catch (e) {}
+      if (syncEl) syncEl.textContent = "☁ 已同步写入云端";
+      return { ok: true, savedAt };
     }
-  } catch (e) {}
-  if (syncEl) syncEl.textContent = "☁ 数据与框架已分离 · 修改已自动持久化";
-  return false;
+    if (res && res.status === 401) return { ok: false, reason: "auth" };
+    return { ok: false, reason: "http-" + (res ? res.status : "0") };
+  } catch (e) {
+    if (syncEl) syncEl.textContent = "☁ 修改已保存在本机";
+    return { ok: false, reason: "network" };
+  }
 }
 
 /* 口令校验走服务端；返回 true/false/null（null = 服务端不可达，退回本地校验） */
@@ -249,11 +258,68 @@ async function changePasscodeOnServer(oldPass, newPass) {
   }
 }
 
-function saveSiteData(toastMsg = "✓ 修改已保存并同步至独立数据层") {
+/* ---------- 保存状态角标：右下角常驻显示同步结果与最近保存时间 ---------- */
+const syncStatusState = { el: null };
+
+function formatSavedAt(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return "";
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function setSyncStatus(state, iso) {
+  if (!syncStatusState.el) {
+    const el = document.createElement("div");
+    el.id = "sync-status-pill";
+    el.className = "sync-status-pill";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    document.body.appendChild(el);
+    syncStatusState.el = el;
+  }
+  const el = syncStatusState.el;
+  const time = iso === undefined ? "" : formatSavedAt(iso);
+  const map = {
+    saving: ["is-saving", "⟳ 正在保存到云端…"],
+    ok: ["is-ok", time ? `☁ 已保存 · ${time}` : "☁ 已保存到云端"],
+    local: ["is-local", "⌂ 仅保存在本机（未联网）"],
+    fail: ["is-fail", "⚠ 云端同步失败，本机已保存"],
+    idle: ["is-ok", time ? `☁ 最近更新 · ${time}` : ""]
+  };
+  const [cls, text] = map[state] || map.idle;
+  el.className = `sync-status-pill ${cls}`;
+  el.textContent = text;
+  el.hidden = !text;
+  if (text) {
+    el.classList.add("is-visible");
+    window.clearTimeout(el._hideTimer);
+  }
+}
+
+function initSyncIndicator() {
+  if (window.location.protocol === "file:") return;
+  const last = safeStorageGet(STORAGE_SAVED_AT_KEY);
+  if (last) setSyncStatus("idle", last);
+}
+
+function saveSiteData(toastMsg = "") {
   safeStorageSet(STORAGE_DATA_KEY, JSON.stringify(DATA));
   refreshAllViews();
-  syncDataToRemoteServer();
-  if (toastMsg) showToast(toastMsg);
+  setSyncStatus("saving");
+  syncDataToRemoteServer().then(result => {
+    if (result && result.ok) {
+      if (result.savedAt) safeStorageSet(STORAGE_SAVED_AT_KEY, result.savedAt);
+      setSyncStatus("ok", result.savedAt || "");
+      showToast(toastMsg ? `${toastMsg} · 已同步到云端` : "✓ 已保存并同步到云端");
+    } else if (result && result.reason === "offline") {
+      setSyncStatus("local");
+      showToast(toastMsg || "✓ 已保存到本机（离线预览未同步）");
+    } else {
+      setSyncStatus("fail");
+      showToast("⚠ 云端同步失败，改动已存在本机，请检查网络或口令");
+    }
+  });
 }
 
 function getArchiveFolders() {
@@ -546,6 +612,72 @@ function initHome() {
     e.stopPropagation();
     openEditorModal("home-folder", currentHomeDrawer, "ed-folder-photo");
   });
+}
+
+/* ---------- 网易云歌曲 / 歌单 ---------- */
+function parseNeteaseLink(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return null;
+  const idMatch = text.match(/[?&#/](?:song|playlist|album)\/?\?(?:[^#]*&)?id=(\d+)/i);
+  if (idMatch) {
+    return { kind: /playlist/i.test(text) ? "playlist" : "song", id: idMatch[1] };
+  }
+  const loose = text.match(/\bid=(\d+)/i);
+  if (loose) return { kind: /playlist/i.test(text) ? "playlist" : "song", id: loose[1] };
+  if (/^\d+$/.test(text)) return { kind: "song", id: text };
+  return null;
+}
+
+async function fetchNeteaseMeta(parsed) {
+  if (!parsed) return null;
+  const base = (window.CHIRAKA_DATA_CONFIG?.apiEndpoint || "/api/content").replace(/\/content\/?$/, "");
+  const qs = parsed.kind === "playlist" ? `playlist=${parsed.id}` : `id=${parsed.id}`;
+  try {
+    const res = await window.fetch(`${base}/netease?${qs}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+function renderNeteasePlayer() {
+  const slot = $("#netease-slot");
+  if (!slot) return;
+  const track = radio.tracks[radio.current];
+  const songId = track?.neteaseId || "";
+  const playlistId = track?.neteasePlaylistId || "";
+
+  if (!songId && !playlistId) {
+    slot.hidden = true;
+    slot.innerHTML = "";
+    return;
+  }
+
+  slot.hidden = false;
+  const parts = [`<p class="sona-section-label" style="margin:0 0 8px">NETEASE · 网易云音乐</p>`];
+  if (songId) {
+    parts.push(`<iframe class="netease-song-frame" src="https://music.163.com/outchain/player?type=2&id=${encodeURIComponent(songId)}&auto=1&height=66" frameborder="no" marginwidth="0" marginheight="0" width="100%" height="86" loading="lazy" title="网易云单曲播放器"></iframe>`);
+  }
+  if (playlistId) {
+    parts.push(`<button class="netease-playlist-btn" type="button" id="open-netease-playlist">🎧 展开网易云歌单${track.playlistTitle ? ` · ${escapeHtml(track.playlistTitle)}` : ""}</button>`);
+  }
+  slot.innerHTML = parts.join("");
+  slot.dataset.songId = songId;
+  slot.dataset.playlistId = playlistId;
+
+  $("#open-netease-playlist", slot)?.addEventListener("click", () => openNeteasePlaylistDialog(playlistId, track?.playlistTitle || ""));
+}
+
+function openNeteasePlaylistDialog(playlistId, title) {
+  const dialog = $("#netease-playlist-dialog");
+  const body = $("#netease-playlist-body");
+  const head = $("#netease-playlist-title");
+  if (!dialog || !body) return;
+  if (head) head.textContent = title ? `网易云歌单 · ${title}` : "网易云歌单";
+  body.innerHTML = `<iframe src="https://music.163.com/outchain/player?type=0&id=${encodeURIComponent(playlistId)}&auto=0&height=430" frameborder="no" marginwidth="0" marginheight="0" width="100%" height="450" loading="lazy" title="网易云歌单播放器"></iframe>`;
+  if (typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+  document.body.classList.add("has-dialog");
 }
 
 /* ---------- 04 城市电台 (支持多频段电台管理 + 歌曲新增编辑 + 角色印象曲联动) ---------- */
@@ -855,6 +987,7 @@ function updatePlayer() {
 
   renderRadioSceneGrid();
   renderFullPlaylist();
+  renderNeteasePlayer();
   updateProgressUI();
 }
 
@@ -2710,11 +2843,67 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
             <button class="preset-chip" type="button" id="ed-track-clear-audio">清空音频地址</button>
           </div>
         </div>
+        <div class="form-field span-2" style="border-top:1px dashed rgba(255,255,255,0.2);padding-top:12px">
+          <label for="ed-track-netease">
+            <span>网易云音乐链接（单曲或歌单）</span>
+            <small>直接粘贴浏览器地址栏那条链接，点右边按钮自动填歌名、歌手、封面与时长</small>
+          </label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="form-input" id="ed-track-netease" value="${escapeHtml(trackObj.neteaseUrl || "")}" placeholder="https://music.163.com/#/song?id=186016 或 .../playlist?id=24381616" style="flex:1 1 260px">
+            <button class="admin-tool-btn is-gold" type="button" id="ed-track-netease-parse" style="flex-shrink:0">🔍 解析并填充</button>
+          </div>
+          <p id="ed-track-netease-hint" style="margin:6px 0 0;font-size:11.5px;color:rgba(255,240,250,0.66)">${
+            trackObj.neteaseId
+              ? `当前已绑定单曲 ID：${escapeHtml(trackObj.neteaseId)}`
+              : trackObj.neteasePlaylistId
+              ? `当前已绑定歌单 ID：${escapeHtml(trackObj.neteasePlaylistId)}`
+              : "未绑定网易云，留空则只用上面的音频地址"
+          }</p>
+        </div>
         ${buildImageFieldHtml("ed-track-cover", "单曲黑胶封面图", trackObj.cover)}
       </div>
     `;
 
     wireImageUploadControls(bodyEl);
+
+    $("#ed-track-netease-parse", bodyEl)?.addEventListener("click", async () => {
+      const input = $("#ed-track-netease", bodyEl);
+      const hint = $("#ed-track-netease-hint", bodyEl);
+      const parsed = parseNeteaseLink(input?.value || "");
+      if (!parsed) {
+        showToast("⚠ 链接里没识别到歌曲或歌单 ID");
+        return;
+      }
+      if (hint) hint.textContent = "⏳ 正在解析…";
+      const meta = await fetchNeteaseMeta(parsed);
+      if (!meta || !meta.ok) {
+        if (parsed.kind === "song") {
+          activeEditorContext.neteaseSongId = parsed.id;
+          if (hint) hint.textContent = `已记下单曲 ID：${parsed.id}（在线解析失败，歌名/封面请手动填）`;
+        } else {
+          activeEditorContext.neteasePlaylistId = parsed.id;
+          if (hint) hint.textContent = `已记下歌单 ID：${parsed.id}（在线解析失败，可直接保存）`;
+        }
+        showToast("✓ 已识别 ID，保存后即可嵌入播放");
+        return;
+      }
+      if (meta.kind === "song") {
+        activeEditorContext.neteaseSongId = meta.id;
+        activeEditorContext.neteasePlaylistId = "";
+        const setVal = (id, v) => { const el = $(id, bodyEl); if (el && v) el.value = v; };
+        setVal("#ed-track-title", meta.title);
+        setVal("#ed-track-artist", meta.artist);
+        setVal("#ed-track-duration", meta.duration);
+        setVal("#ed-track-cover", meta.cover);
+        if (hint) hint.textContent = `✓ 已填充：${meta.title} — ${meta.artist}${meta.duration ? ` · ${meta.duration}` : ""}`;
+        showToast("✓ 已按网易云信息填好，检查后点保存");
+      } else {
+        activeEditorContext.neteasePlaylistId = meta.id;
+        activeEditorContext.neteaseSongId = "";
+        if (hint) hint.textContent = `✓ 已绑定歌单：《${meta.title}》· ${meta.trackCount} 首（播放页可展开整张歌单）`;
+        showToast("✓ 歌单已绑定，保存后生效");
+      }
+    });
 
     $("#jump-manage-stations-btn", bodyEl)?.addEventListener("click", () => {
       openEditorModal("stations");
@@ -2902,6 +3091,21 @@ function handleEditorFormSubmit(e) {
     trackObj.suit = $("#ed-track-suit")?.value || "♥";
     trackObj.src = $("#ed-track-src")?.value.trim() || "";
     trackObj.cover = $("#ed-track-cover")?.value.trim() || "assets/bg/city-sunset.jpg";
+    trackObj.neteaseUrl = $("#ed-track-netease")?.value.trim() || "";
+    trackObj.neteaseId = activeEditorContext.neteaseSongId || "";
+    trackObj.neteasePlaylistId = activeEditorContext.neteasePlaylistId || "";
+    if (!trackObj.neteaseUrl && (trackObj.neteaseId || trackObj.neteasePlaylistId)) {
+      trackObj.neteaseUrl = trackObj.neteaseId
+        ? `https://music.163.com/#/song?id=${trackObj.neteaseId}`
+        : `https://music.163.com/#/playlist?id=${trackObj.neteasePlaylistId}`;
+    }
+    if (!trackObj.neteaseId && !trackObj.neteasePlaylistId && trackObj.neteaseUrl) {
+      const parsed = parseNeteaseLink(trackObj.neteaseUrl);
+      if (parsed) {
+        if (parsed.kind === "song") trackObj.neteaseId = parsed.id;
+        else trackObj.neteasePlaylistId = parsed.id;
+      }
+    }
 
     if (isNew) {
       DATA.tracks.push(trackObj);
@@ -2917,19 +3121,6 @@ function handleEditorFormSubmit(e) {
 }
 
 /* ---------- 待补充清单 & 远程数据接口/备份中心 (#data-dialog) ---------- */
-function downloadContentJsonFile() {
-  const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "content-data.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  showToast("⬇ 已下载独立数据文件 content-data.json（可放置于服务器 data/ 目录）");
-}
-
 function openPendingChecklistModal() {
   const dialog = $("#data-dialog");
   const titleEl = $("#data-dialog-title");
@@ -2986,44 +3177,26 @@ function openBackupAndSettingsModal() {
   const bodyEl = $("#data-dialog-body");
   if (!dialog || !bodyEl) return;
 
-  kickerEl.textContent = "SEPARATED DATA LAYER & CLOUD API // WCPD-88";
-  titleEl.textContent = "数据与框架分离配置 · 远程同步与备份";
+  kickerEl.textContent = "CLOUD SYNC & ACCESS // WCPD-88";
+  titleEl.textContent = "云端同步与访问设置";
 
-  const jsonStr = JSON.stringify(DATA, null, 2);
   bodyEl.innerHTML = `
     <div class="form-grid">
       <div class="form-field span-2" style="padding:12px 14px;background:#21143a;border-left:3px solid var(--mint);border-radius:2px">
-        <strong style="color:var(--mint);font-size:13px">☁ 架构说明：网站框架代码与动态数据已彻底分离</strong>
+        <strong style="color:var(--mint);font-size:13px">☁ 保存后自动同步到服务器，访客刷新即可看到</strong>
         <p style="margin:4px 0 0;font-size:12px;color:rgba(255,240,250,0.84)">
-          所有可编辑内容独立存放在 <code>data/content-data.json</code> 中。联网部署时运行随附的 <code>node server.js</code>（或配置下方远程 API 地址），管理员在网页上的每次保存都会直接写回服务器数据文件，无需手动导出替换代码。
+          每次点【保存修改】都会直接写入云端数据库，不需要再导出文件或替换代码。右下角会显示最近一次保存的时间。
         </p>
       </div>
       <div class="form-field span-2">
-        <label for="remote-api-url-input">1. 联网部署数据读写接口地址 (Remote API Endpoint)</label>
+        <label for="remote-api-url-input">1. 数据读写接口地址 (Remote API Endpoint)</label>
         <div style="display:flex;gap:8px">
           <input class="form-input" id="remote-api-url-input" type="text" value="${escapeHtml(authState.getApiUrl())}" placeholder="/api/content 或 https://your-domain.com/api/content">
           <button class="admin-tool-btn is-gold" type="button" id="save-api-url-btn" style="flex-shrink:0">保存并同步</button>
         </div>
       </div>
-      <div class="form-field span-2">
-        <label>
-          <span>2. 独立数据文件 (content-data.json) 备份与恢复</span>
-          <div style="display:flex;gap:8px">
-            <button class="admin-tool-btn is-gold" type="button" id="modal-download-json">⬇ 下载 content-data.json</button>
-            <button class="admin-tool-btn" type="button" id="modal-copy-json">📋 复制 JSON</button>
-          </div>
-        </label>
-        <textarea class="form-textarea" id="backup-json-textarea" style="min-height:115px;font-family:monospace;font-size:12px">${escapeHtml(jsonStr)}</textarea>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px">
-          <label class="upload-file-label">
-            <span>📂 从本地上传 content-data.json 恢复</span>
-            <input type="file" accept=".json,application/json" id="upload-json-file" style="display:none">
-          </label>
-          <button class="button button-primary" type="button" id="apply-json-import-btn" style="padding:8px 16px"><span>应用上方 JSON 数据</span><b>✓</b></button>
-        </div>
-      </div>
       <div class="form-field span-2" style="padding-top:10px;border-top:1px dashed rgba(255,255,255,0.22)">
-        <label for="new-admin-pass-input">3. 修改管理员登录口令（由服务端统一校验）</label>
+        <label for="new-admin-pass-input">2. 修改管理员登录口令（由服务端统一校验）</label>
         <div style="display:flex;gap:10px">
           <input class="form-input" id="new-admin-pass-input" type="text" value="${escapeHtml(authState.getPasscode())}" placeholder="输入新的管理员口令">
           <button class="admin-tool-btn is-gold" type="button" id="save-new-pass-btn" style="flex-shrink:0">保存新口令</button>
@@ -3037,50 +3210,6 @@ function openBackupAndSettingsModal() {
     authState.setApiUrl(url);
     const ok = await syncDataToRemoteServer();
     showToast(ok ? `☁ 已连接并同步至接口 ${url}` : `✓ 接口地址已设为 ${url}（本地预览已缓存）`);
-  });
-
-  $("#modal-download-json", bodyEl)?.addEventListener("click", downloadContentJsonFile);
-  $("#modal-copy-json", bodyEl)?.addEventListener("click", () => {
-    const ta = $("#backup-json-textarea", bodyEl);
-    if (!ta) return;
-    ta.select();
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(ta.value);
-      } else {
-        document.execCommand("copy");
-      }
-    } catch (e) {
-      document.execCommand("copy");
-    }
-    showToast("📋 已复制全站 JSON 数据至剪贴板");
-  });
-
-  $("#upload-json-file", bodyEl)?.addEventListener("change", e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const ta = $("#backup-json-textarea", bodyEl);
-      if (ta) ta.value = ev.target.result;
-      showToast("📂 已读取 JSON 文件，请点击【应用上方 JSON 数据】生效");
-    };
-    reader.readAsText(file);
-  });
-
-  $("#apply-json-import-btn", bodyEl)?.addEventListener("click", () => {
-    const ta = $("#backup-json-textarea", bodyEl);
-    if (!ta) return;
-    try {
-      const parsed = JSON.parse(ta.value);
-      const merged = normalizeLoadedData(parsed, DEFAULT_DATA);
-      Object.assign(DATA, merged);
-      dialog.close();
-      document.body.classList.remove("has-dialog");
-      saveSiteData("✓ 已成功导入并同步档案数据");
-    } catch (e) {
-      showToast("⚠ JSON 格式有误，请检查后再试");
-    }
   });
 
   $("#save-new-pass-btn", bodyEl)?.addEventListener("click", async () => {
@@ -3370,6 +3499,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initArticle();
   initGallery();
   initRadioPage();
+  initSyncIndicator();
   tryLoadFromRemoteServer();
 
   if (window.CHIRAKA_SPA_MODE) {
