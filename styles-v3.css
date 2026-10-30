@@ -2199,3 +2199,133 @@ body.page-radio.radio-playing .ambient-blob { opacity: 0.78; }
 .rim-pulse-arc-2 {
   animation: dashMarch 14s linear infinite reverse;
 }
+
+/* ==========================================================================
+   RC-1 字体渲染加固：自托管字体 + 细笔画不断线（低 DPI / Edge 平板）
+   ========================================================================== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* 可变字体按轴取值，禁掉浏览器伪造粗体，避免细笔画被挤成缺口 */
+.summer-intro h1,
+.intro-script,
+.sheet-signature-en,
+.brand-script-sub,
+.drawer-top-script,
+.brand-copy strong,
+.hero-motto-card {
+  font-synthesis: none;
+}
+
+/* 极细字体（Bodoni 的大标题发丝笔画、Great Vibes 的单线手写）补一层极薄描边，
+   让细处在低分图像素栅格化时不至于断掉 */
+.summer-intro h1 {
+  -webkit-text-stroke: 0.6px rgba(255, 255, 255, 0.42);
+  paint-order: stroke fill;
+}
+.intro-script,
+.sheet-signature-en,
+.brand-script-sub,
+.drawer-top-script {
+  -webkit-text-stroke: 0.35px currentColor;
+  paint-order: stroke fill;
+}
+
+/* ==========================================================================
+   RC-2 首页档案轮播：线索按钮上的进度条 + 暂停态
+   ========================================================================== */
+.board-clue-switcher { --home-carousel-ms: 6500ms; }
+.board-clue-btn { position: relative; overflow: visible; }
+.board-clue-btn::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: -3px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--pink));
+  transform: scaleX(0);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+}
+.board-clue-btn.is-active::after {
+  opacity: 1;
+  animation: homeClueProgress var(--home-carousel-ms, 6500ms) linear forwards;
+}
+.board-clue-switcher.is-paused .board-clue-btn.is-active::after {
+  animation-play-state: paused;
+}
+@keyframes homeClueProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-clue-btn.is-active::after { animation: none; opacity: 0.5; transform: scaleX(1); }
+}
+
+/* ==========================================================================
+   RC-3 图片拖拽上传区（平板友好：大点击区 + 明显落点反馈）
+   ========================================================================== */
+.upload-drop-zone {
+  position: relative;
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 1.5px dashed rgba(60, 232, 255, 0.55);
+  border-radius: 3px;
+  background: rgba(60, 232, 255, 0.06);
+  color: rgba(255, 240, 250, 0.9);
+  font: 600 12px/1.2 var(--cn);
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.upload-drop-zone small {
+  font-weight: 400;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.upload-drop-zone:hover {
+  background: rgba(60, 232, 255, 0.14);
+  border-color: var(--cyan);
+}
+.upload-drop-zone.is-dragover {
+  border-color: var(--gold);
+  border-style: solid;
+  background: rgba(255, 208, 91, 0.18);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 208, 91, 0.25), inset 0 0 22px rgba(255, 208, 91, 0.18);
+}
+.upload-drop-zone.is-has-file {
+  border-color: rgba(56, 242, 184, 0.75);
+  background: rgba(56, 242, 184, 0.12);
+}
+.upload-drop-zone .drop-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.upload-drop-zone .drop-badge {
+  flex: 0 0 auto;
+  font-size: 15px;
+}
+.upload-drop-zone .drop-text {
+  flex: 0 0 auto;
+}
+
+/* 平板 / 窄屏：落点区独占一行，做成更大的触摸目标 */
+@media (max-width: 1100px) {
+  .upload-drop-zone {
+    flex: 1 1 100%;
+    min-height: 64px;
+    justify-content: center;
+    text-align: center;
+  }
+
+}

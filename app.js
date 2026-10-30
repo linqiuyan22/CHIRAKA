@@ -462,6 +462,70 @@ function selectHomeDrawer(index, instant = false) {
   }
 }
 
+/* ---------- 首页档案自动轮播 ---------- */
+const homeCarousel = {
+  timer: null,
+  paused: false,
+  intervalMs: 6500,
+  userStopped: false
+};
+
+function playHomeCarousel() {
+  stopHomeCarousel();
+  if (homeCarousel.userStopped) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  homeCarousel.timer = window.setInterval(() => {
+    if (homeCarousel.paused || document.hidden) return;
+    if (document.querySelector("dialog[open]")) return;
+    const folders = getArchiveFolders();
+    if (folders.length < 2) return;
+    selectHomeDrawer((currentHomeDrawer + 1) % folders.length, false);
+  }, homeCarousel.intervalMs);
+}
+
+function stopHomeCarousel() {
+  if (homeCarousel.timer) {
+    window.clearInterval(homeCarousel.timer);
+    homeCarousel.timer = null;
+  }
+}
+
+function setHomeCarouselPaused(paused) {
+  homeCarousel.paused = paused;
+  const switcher = $(".board-clue-switcher");
+  if (switcher) switcher.classList.toggle("is-paused", paused);
+}
+
+function initHomeCarousel() {
+  const caseEl = $("#drawer-case");
+  const switcher = $(".board-clue-switcher");
+  if (switcher) switcher.style.setProperty("--home-carousel-ms", `${homeCarousel.intervalMs}ms`);
+
+  // 鼠标悬停 / 键盘聚焦时暂停，走开继续
+  caseEl?.addEventListener("pointerenter", () => setHomeCarouselPaused(true));
+  caseEl?.addEventListener("pointerleave", () => setHomeCarouselPaused(false));
+  caseEl?.addEventListener("focusin", () => setHomeCarouselPaused(true));
+  caseEl?.addEventListener("focusout", () => {
+    if (!caseEl.contains(document.activeElement)) setHomeCarouselPaused(false);
+  });
+  // 触摸设备按下时先停，抬手后继续
+  caseEl?.addEventListener("touchstart", () => setHomeCarouselPaused(true), { passive: true });
+  caseEl?.addEventListener("touchend", () => window.setTimeout(() => setHomeCarouselPaused(false), 2500), { passive: true });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopHomeCarousel();
+    else playHomeCarousel();
+  });
+
+  // 编辑弹窗开着时停转，避免关窗后卷宗已经换了内容对不上
+  const editorDialog = $("#editor-dialog");
+  if (editorDialog) {
+    editorDialog.addEventListener("close", () => playHomeCarousel());
+  }
+
+  playHomeCarousel();
+}
+
 function initHome() {
   renderHomeHero();
   selectHomeDrawer(currentHomeDrawer, true);
@@ -469,8 +533,10 @@ function initHome() {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.miniDrawer);
       selectHomeDrawer(idx, false);
+      playHomeCarousel(); // 手动切换后重置计时，避免刚点完就自动跳走
     });
   });
+  initHomeCarousel();
 
   $("#edit-home-hero-btn")?.addEventListener("click", () => openEditorModal("home-hero"));
   $("#replace-home-bg-btn")?.addEventListener("click", () => openEditorModal("home-hero", null, "ed-home-backdrop"));
@@ -1900,16 +1966,20 @@ function buildImageFieldHtml(fieldId, labelText, currentVal) {
   const presetsHtml = PRESET_IMAGES.map(
     p => `<button class="preset-chip" type="button" data-preset-target="${fieldId}" data-preset-val="${escapeHtml(p.path)}">${escapeHtml(p.label)}</button>`
   ).join("");
+  const hasFile = !!(currentVal && String(currentVal).trim());
   return `
     <div class="form-field span-2">
       <label for="${fieldId}">
         <span>${escapeHtml(labelText)}</span>
-        <small>支持上传本地图片、选择预设图或填写图片路径</small>
+        <small>支持拖拽图片进来、点选本地图片、选择预设图或填写图片路径</small>
       </label>
       <input class="form-input" id="${fieldId}" name="${fieldId}" type="text" value="${escapeHtml(currentVal || "")}" placeholder="图片路径 / URL / 上传后自动生成数据">
       <div class="upload-row">
-        <label class="upload-file-label">
-          <span>📁 上传本地图片</span>
+        <label class="upload-drop-zone${hasFile ? " is-has-file" : ""}" data-drop-target="${fieldId}">
+          <span class="drop-inner">
+            <span class="drop-badge" aria-hidden="true">🖼</span>
+            <span class="drop-text">拖拽图片到这里<small> · 或点一下选本地图片</small></span>
+          </span>
           <input type="file" accept="image/*" data-upload-target="${fieldId}" style="display:none">
         </label>
         <button class="preset-chip" type="button" data-clear-target="${fieldId}">清空图片</button>
@@ -1919,32 +1989,85 @@ function buildImageFieldHtml(fieldId, labelText, currentVal) {
   `;
 }
 
+function applyPickedImage(file, inputEl, zoneEl, container) {
+  if (!file) return;
+  if (file.type && !file.type.startsWith("image/")) {
+    showToast("⚠ 只能上传图片文件（jpg / png / webp）");
+    return;
+  }
+  readImageFileAsDataUrl(file, dataUrl => {
+    inputEl.value = dataUrl;
+    if (zoneEl) zoneEl.classList.add("is-has-file");
+    showToast("✓ 图片已就位，点击右下角【保存修改】即可生效");
+  });
+}
+
 function wireImageUploadControls(container) {
   $$("[data-upload-target]", container).forEach(fileInput => {
     fileInput.addEventListener("change", () => {
       const file = fileInput.files?.[0];
       const targetId = fileInput.dataset.uploadTarget;
       const inputEl = $(`#${targetId}`, container);
-      if (file && inputEl) {
-        readImageFileAsDataUrl(file, dataUrl => {
-          inputEl.value = dataUrl;
-          showToast("✓ 本地图片已加载，点击右下角【保存修改】即可生效");
-        });
-      }
+      const zoneEl = $(`[data-drop-target="${targetId}"]`, container);
+      if (file && inputEl) applyPickedImage(file, inputEl, zoneEl, container);
     });
   });
+
+  // 拖拽上传（平板 / 桌面通用；拖到弹窗外不会误触发浏览器打开图片）
+  $$("[data-drop-target]", container).forEach(zone => {
+    const targetId = zone.dataset.dropTarget;
+    const inputEl = $(`#${targetId}`, container);
+    if (!inputEl) return;
+    const setDrag = on => zone.classList.toggle("is-dragover", on);
+
+    ["dragenter", "dragover"].forEach(evt => {
+      zone.addEventListener(evt, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        setDrag(true);
+      });
+    });
+    ["dragleave", "dragend"].forEach(evt => {
+      zone.addEventListener(evt, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!zone.contains(e.relatedTarget)) setDrag(false);
+      });
+    });
+    zone.addEventListener("drop", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag(false);
+      applyPickedImage(e.dataTransfer?.files?.[0], inputEl, zone, container);
+    });
+  });
+
+  // 兜底：文件拖到弹窗其它位置时不跳转离开页面
+  if (container && !container.dataset.dropGuard) {
+    container.dataset.dropGuard = "1";
+    const hasFiles = e => Array.from(e.dataTransfer?.types || []).includes("Files");
+    container.addEventListener("dragover", e => { if (hasFiles(e)) e.preventDefault(); });
+    container.addEventListener("drop", e => { if (hasFiles(e)) e.preventDefault(); });
+  }
 
   $$("[data-preset-target]", container).forEach(btn => {
     btn.addEventListener("click", () => {
       const inputEl = $(`#${btn.dataset.presetTarget}`, container);
-      if (inputEl) inputEl.value = btn.dataset.presetVal || "";
+      if (inputEl) {
+        inputEl.value = btn.dataset.presetVal || "";
+        $(`[data-drop-target="${btn.dataset.presetTarget}"]`, container)?.classList.add("is-has-file");
+      }
     });
   });
 
   $$("[data-clear-target]", container).forEach(btn => {
     btn.addEventListener("click", () => {
       const inputEl = $(`#${btn.dataset.clearTarget}`, container);
-      if (inputEl) inputEl.value = "";
+      if (inputEl) {
+        inputEl.value = "";
+        $(`[data-drop-target="${btn.dataset.clearTarget}"]`, container)?.classList.remove("is-has-file");
+      }
     });
   });
 }
@@ -1967,6 +2090,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
 
   activeEditorContext = { type, targetId };
   footLeft.innerHTML = "";
+  if (typeof stopHomeCarousel === "function") stopHomeCarousel();
 
   if (type === "home-hero") {
     const h = DATA.home || {};
