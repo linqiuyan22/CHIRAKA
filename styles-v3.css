@@ -2467,3 +2467,121 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     padding: 6px 11px;
   }
 }
+/* ==========================================================================
+   RC-6 统一图标：内联 SVG，不依赖 emoji 字体（跨设备一致）
+   ========================================================================== */
+.icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  vertical-align: -0.13em;
+  overflow: visible;
+}
+.icon--lg { width: 1.2em; height: 1.2em; }
+.icon--sm { width: 0.82em; height: 0.82em; }
+
+/* 按钮里图标与文字之间留一点缝 */
+button .icon + span,
+label .icon + span,
+.admin-tool-btn .icon,
+.preset-chip .icon {
+  margin-right: 0.42em;
+}
+.admin-tool-btn,
+.preset-chip,
+.upload-file-label,
+.netease-playlist-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15em;
+}
+
+/* 花色等符号强制文字呈现，避免安卓/部分浏览器变成彩色 emoji */
+.suit-glyph,
+.sheet-pill,
+.tile-mark,
+.art-number,
+.rpm-pill,
+.rank-badge {
+  font-variant-emoji: text;
+}
+
+/* RC-7 城市新闻 / 论坛徽章：游戏 HUD 切角标签（替换旧圆角实心徽章，避免 emoji 观感） */
+.post-type-badge.is-news,
+.post-type-badge.is-forum,
+.story-tag,
+.news-row-tag,
+.char-link-pill {
+  --hud-rgb: 255, 208, 91;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 13px 5px 11px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, rgba(14, 9, 26, 0.92), rgba(14, 9, 26, 0.78)),
+    linear-gradient(118deg, rgba(var(--hud-rgb), 0.92), rgba(var(--hud-rgb), 0.2) 62%, rgba(var(--hud-rgb), 0.62));
+  background-origin: border-box;
+  background-clip: padding-box, padding-box, border-box;
+  color: #fff;
+  font: 700 11px/1.1 var(--cn);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+  text-shadow: 0 0 6px rgba(var(--hud-rgb), 0.35);
+}
+
+.post-type-badge.is-news { --hud-rgb: 255, 61, 139; }
+.post-type-badge.is-forum { --hud-rgb: 60, 232, 255; }
+.story-tag,
+.news-row-tag { --hud-rgb: 255, 208, 91; }
+.char-link-pill { --hud-rgb: 56, 242, 184; }
+
+/* 左侧 HUD 刻度条 */
+.post-type-badge.is-news::before,
+.post-type-badge.is-forum::before,
+.story-tag::before,
+.news-row-tag::before,
+.char-link-pill::before {
+  content: "";
+  flex: none;
+  width: 2px;
+  height: 9px;
+  background: rgb(var(--hud-rgb));
+  box-shadow: 0 0 8px rgba(var(--hud-rgb), 0.95);
+}
+
+.post-type-badge .icon,
+.story-tag .icon,
+.news-row-tag .icon,
+.char-link-pill .icon {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  color: rgb(var(--hud-rgb));
+  filter: drop-shadow(0 0 5px rgba(var(--hud-rgb), 0.7));
+}
+
+/* 头条里那排徽章不要被文字基线拉歪 */
+.lead-body > div > .post-type-badge,
+.lead-body > div > .story-tag { vertical-align: middle; }
+
+/* 角色联动 pill 保持可点击手感 */
+.char-link-pill {
+  cursor: pointer;
+  transition: background-image 0.16s ease, transform 0.16s ease;
+}
+.char-link-pill:hover,
+.char-link-pill:focus-visible {
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, rgba(22, 14, 38, 0.94), rgba(22, 14, 38, 0.84)),
+    linear-gradient(118deg, rgba(var(--hud-rgb), 1), rgba(var(--hud-rgb), 0.34) 62%, rgba(var(--hud-rgb), 0.8));
+  transform: translateX(1px);
+}

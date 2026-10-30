@@ -184,7 +184,7 @@ async function tryLoadFromRemoteServer() {
       Object.assign(DATA, merged);
       safeStorageSet(STORAGE_DATA_KEY, JSON.stringify(DATA));
       const syncEl = $("#admin-sync-indicator");
-      if (syncEl) syncEl.textContent = "☁ 已连接远程数据接口 · 实时读写分离";
+      if (syncEl) syncEl.textContent = "已连接远程数据接口 · 实时读写分离";
       setSyncStatus("ok", res.headers.get("x-chiraka-saved-at") || "");
       refreshAllViews();
     }
@@ -211,13 +211,13 @@ async function syncDataToRemoteServer() {
       try {
         savedAt = (await res.json()).savedAt || "";
       } catch (e) {}
-      if (syncEl) syncEl.textContent = "☁ 已同步写入云端";
+      if (syncEl) syncEl.textContent = "已同步写入云端";
       return { ok: true, savedAt };
     }
     if (res && res.status === 401) return { ok: false, reason: "auth" };
     return { ok: false, reason: "http-" + (res ? res.status : "0") };
   } catch (e) {
-    if (syncEl) syncEl.textContent = "☁ 修改已保存在本机";
+    if (syncEl) syncEl.textContent = "修改已保存在本机";
     return { ok: false, reason: "network" };
   }
 }
@@ -282,10 +282,10 @@ function setSyncStatus(state, iso) {
   const time = iso === undefined ? "" : formatSavedAt(iso);
   const map = {
     saving: ["is-saving", "⟳ 正在保存到云端…"],
-    ok: ["is-ok", time ? `☁ 已保存 · ${time}` : "☁ 已保存到云端"],
-    local: ["is-local", "⌂ 仅保存在本机（未联网）"],
-    fail: ["is-fail", "⚠ 云端同步失败，本机已保存"],
-    idle: ["is-ok", time ? `☁ 最近更新 · ${time}` : ""]
+    ok: ["is-ok", time ? `已保存 · ${time}` : "已保存到云端"],
+    local: ["is-local", "仅保存在本机（未联网）"],
+    fail: ["is-fail", "云端同步失败，本机已保存"],
+    idle: ["is-ok", time ? `最近更新 · ${time}` : ""]
   };
   const [cls, text] = map[state] || map.idle;
   el.className = `sync-status-pill ${cls}`;
@@ -360,16 +360,66 @@ function saveSiteData(toastMsg = "") {
     if (result && result.ok) {
       if (result.savedAt) safeStorageSet(STORAGE_SAVED_AT_KEY, result.savedAt);
       setSyncStatus("ok", result.savedAt || "");
-      showToast(toastMsg ? `${toastMsg} · 已同步到云端` : "✓ 已保存并同步到云端");
+      showToast(toastMsg ? `${toastMsg} · 已同步到云端` : "已保存并同步到云端");
     } else if (result && result.reason === "offline") {
       setSyncStatus("local");
-      showToast(toastMsg || "✓ 已保存到本机（离线预览未同步）");
+      showToast(toastMsg || "已保存到本机（离线预览未同步）");
     } else {
       setSyncStatus("fail");
-      showToast("⚠ 云端同步失败，改动已存在本机，请检查网络或口令");
+      showToast("云端同步失败，改动已存在本机，请检查网络或口令");
     }
   });
 }
+
+/* ---------- 统一图标：内联 SVG（不依赖 emoji 字体，任何设备显示一致） ---------- */
+const ICON_PATHS = {
+  clipboard: '<rect x="8" y="3" width="8" height="4" rx="1.2"/><path d="M8 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h4"/>',
+  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/>',
+  undo: '<path d="M3.5 10.5h10.5a5 5 0 0 1 0 10H8"/><path d="M7.5 6.5l-4 4 4 4"/>',
+  plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+  image: '<rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16.5l-4.6-4.6L8 21"/>',
+  upload: '<path d="M12 16.5V4.5"/><path d="M7.5 9L12 4.5 16.5 9"/><path d="M4.5 16v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>',
+  folder: '<path d="M3 7.5a2 2 0 0 1 2-2h3.6l2 2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  music: '<circle cx="7" cy="17.8" r="2.6"/><circle cx="18" cy="15.3" r="2.6"/><path d="M9.6 17.8V6.2l11-2.1v11.2"/>',
+  headphones: '<path d="M4 14.5v-2a8 8 0 0 1 16 0v2"/><rect x="2.6" y="14" width="4" height="7" rx="1.7"/><rect x="17.4" y="14" width="4" height="7" rx="1.7"/>',
+  search: '<circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8l4.6 4.6"/>',
+  trash: '<path d="M4 7h16"/><path d="M9.5 11v6.5M14.5 11v6.5"/><path d="M6.2 7l.9 13a1 1 0 0 0 1 .9h7.8a1 1 0 0 0 1-.9l.9-13"/><path d="M9.2 7V4.2h5.6V7"/>',
+  comment: '<path d="M21 12a8 8 0 0 1-8 8H8.4L3.6 23v-5.6A8 8 0 0 1 8 4h5a8 8 0 0 1 8 8z"/>',
+  link: '<path d="M10.2 13.4a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1 1"/><path d="M13.8 10.6a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1-1"/>',
+  dice: '<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3.2"/><circle cx="8.5" cy="8.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.25" fill="currentColor" stroke="none"/>',
+  cocktail: '<path d="M3.8 4.2h16.4L12 13.6z"/><path d="M12 13.6V20"/><path d="M8 20h8"/>',
+  heart: '<path d="M12 20.2C12 20.2 4.6 15.6 4.6 10.6A4 4 0 0 1 12 8.4a4 4 0 0 1 7.4 2.2c0 5-7.4 9.6-7.4 9.6z"/>',
+  heartSolid: '<path d="M12 20.2C12 20.2 4.6 15.6 4.6 10.6A4 4 0 0 1 12 8.4a4 4 0 0 1 7.4 2.2c0 5-7.4 9.6-7.4 9.6z" fill="currentColor"/>',
+  play: '<path d="M8.4 5.2l10.4 6.8-10.4 6.8z"/>',
+  prev: '<path d="M7 5.5v13"/><path d="M18.4 5.4l-9.6 6.6 9.6 6.6z"/>',
+  next: '<path d="M17 5.5v13"/><path d="M5.6 5.4l9.6 6.6-9.6 6.6z"/>',
+  star: '<path d="M12 3.6l2.7 5.7 6.2.8-4.6 4.3 1.2 6.1L12 17.6l-5.5 2.9 1.2-6.1L3.1 10l6.2-.8z"/>',
+  starSolid: '<path d="M12 3.6l2.7 5.7 6.2.8-4.6 4.3 1.2 6.1L12 17.6l-5.5 2.9 1.2-6.1L3.1 10l6.2-.8z" fill="currentColor"/>',
+  sparkle: '<path d="M12 3.2l1.7 6.5 6.5 1.7-6.5 1.7-1.7 6.5-1.7-6.5L3.8 11.4l6.5-1.7z"/>',
+  cloud: '<path d="M7.2 18.4a4.2 4.2 0 0 1 .6-8.4 6.1 6.1 0 0 1 11.6 1.7 3.6 3.6 0 0 1-.6 6.7z"/>',
+  check: '<path d="M4.5 12.6l5 5L19.8 7"/>',
+  warn: '<path d="M12 4.2l8.8 15.6H3.2z"/><path d="M12 10v4"/><circle cx="12" cy="17.2" r=".85" fill="currentColor" stroke="none"/>',
+  eye: '<path d="M2.4 12S6 6.2 12 6.2 21.6 12 21.6 12 18 17.8 12 17.8 2.4 12 2.4 12z"/><circle cx="12" cy="12" r="2.7"/>',
+  user: '<circle cx="12" cy="8.2" r="3.7"/><path d="M4.6 20.2a7.4 7.4 0 0 1 14.8 0"/>',
+  news: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9.5h6M7 13h10M7 16.5h7"/>',
+  palette: '<path d="M12 3.2a8.8 8.8 0 1 0 0 17.6c1.4 0 2.1-1 2.1-2s-.7-2-2.1-2h-1a2 2 0 0 1 0-4h5.2a2.9 2.9 0 0 0 2.9-2.9A6.9 6.9 0 0 0 12 3.2z"/><circle cx="7.9" cy="10.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/>',
+  clock: '<circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.2 2"/>',
+  hourglass: '<path d="M7 3.2h10M7 20.8h10"/><path d="M8.2 3.2v3.4L12 12l-3.8 5.4v3.4M15.8 3.2v3.4L12 12l3.8 5.4v3.4"/>',
+  speaker: '<path d="M4 9.2h3l4.6-3.8v13.2L7 14.8H4z"/><path d="M15.6 8.6a5 5 0 0 1 0 6.8"/><path d="M18.4 6a8.6 8.6 0 0 1 0 12"/>',
+  arrowRight: '<path d="M4.6 12h14.2"/><path d="M13.4 6.6L19.2 12l-5.8 5.4"/>',
+  arrowLeft: '<path d="M19.4 12H5.2"/><path d="M10.6 6.6L4.8 12l5.8 5.4"/>',
+  external: '<path d="M14 4.6h5.4V10"/><path d="M19.4 4.6L11 13"/><path d="M18 14.4v4.2a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.2"/>',
+  dice_shuffle: '<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3.2"/><circle cx="8.5" cy="8.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.25" fill="currentColor" stroke="none"/>',
+  edit: '<path d="M15.6 4.4l4 4-10.4 10.4-4.8.8.8-4.8z"/><path d="M13.6 6.4l4 4"/>'
+};
+
+function icon(name, extraClass = "") {
+  const path = ICON_PATHS[name];
+  if (!path) return "";
+  return `<svg class="icon${extraClass ? " " + extraClass : ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${path}</svg>`;
+}
+
+/* ---------- 统一图标 end ---------- */
 
 function getArchiveFolders() {
   if (!DATA.home) DATA.home = {};
@@ -468,8 +518,8 @@ function updateAuthUI() {
   const switchGuestBtn = $("#switch-guest-btn");
   if (switchGuestBtn) {
     switchGuestBtn.innerHTML = !isAdmin
-      ? `<span>当前正在使用访客模式</span><b>✓</b>`
-      : `<span>切回访客浏览模式</span><b>→</b>`;
+      ? `<span>当前正在使用访客模式</span><b>${icon("check")}</b>`
+      : `<span>切回访客浏览模式</span><b>${icon("arrowRight")}</b>`;
   }
 
   const pendingList = countPendingItems();
@@ -485,8 +535,8 @@ function setAuthMode(mode, silent = false) {
   if (!silent) {
     showToast(
       authState.mode === "admin"
-        ? "✦ 已进入管理员模式：可直接点击各处封面图、「待补充」或编辑按钮修改内容"
-        : "👁 已切换至访客浏览模式（只读视图）"
+        ? "已进入管理员模式：可直接点击各处封面图、「待补充」或编辑按钮修改内容"
+        : "已切换至访客浏览模式（只读视图）"
     );
   }
 }
@@ -567,7 +617,7 @@ function selectHomeDrawer(index, instant = false) {
   const enterBtn = $("#file-enter");
   if (enterBtn) {
     const btnLabel = folder.enterText || DEFAULT_ENTER_TEXTS[folder.index] || `进入${folder.label} // OPEN`;
-    enterBtn.innerHTML = `${escapeHtml(btnLabel)} <span aria-hidden="true">↗</span>`;
+    enterBtn.innerHTML = `${escapeHtml(btnLabel)} <span aria-hidden="true">${icon("external")}</span>`;
     if (window.CHIRAKA_SPA_MODE) {
       enterBtn.setAttribute("href", `#${folder.view}`);
       enterBtn.dataset.spaTarget = folder.view;
@@ -709,7 +759,7 @@ function renderNeteasePlayer() {
     parts.push(`<iframe class="netease-song-frame" src="https://music.163.com/outchain/player?type=2&id=${encodeURIComponent(songId)}&auto=1&height=66" frameborder="no" marginwidth="0" marginheight="0" width="100%" height="86" loading="lazy" title="网易云单曲播放器"></iframe>`);
   }
   if (playlistId) {
-    parts.push(`<button class="netease-playlist-btn" type="button" id="open-netease-playlist">🎧 展开网易云歌单${track.playlistTitle ? ` · ${escapeHtml(track.playlistTitle)}` : ""}</button>`);
+    parts.push(`<button class="netease-playlist-btn" type="button" id="open-netease-playlist">${icon("headphones")}<span>展开网易云歌单${track.playlistTitle ? ` · ${escapeHtml(track.playlistTitle)}` : ""}</span></button>`);
   }
   slot.innerHTML = parts.join("");
   slot.dataset.songId = songId;
@@ -950,7 +1000,7 @@ function renderFullPlaylist() {
     const stObj = radio.stations.find(s => s.id === track.station);
     const stName = stObj ? stObj.name : (track.station || "FM 88.8");
     const charObj = getCharacterById(track.characterId);
-    const charTag = charObj ? ` · 🔗${charObj.label}` : "";
+    const charTag = charObj ? ` · ${icon("link")}${charObj.label}` : "";
     return `
       <li style="display:flex;align-items:center;gap:6px">
         <button class="full-track${isCurrent ? " is-current" : ""}" style="flex:1" type="button" data-track="${index}" aria-current="${isCurrent ? "true" : "false"}">
@@ -962,7 +1012,7 @@ function renderFullPlaylist() {
           <span class="full-track-state${!track.src ? " is-pending-field" : ""}">${escapeHtml(stateLabel)}</span>
           <span class="full-track-rank">${escapeHtml(track.rank || "")}${escapeHtml(track.suit || "")}</span>
         </button>
-        <button class="admin-edit-chip" type="button" data-edit-track="${index}" title="编辑此曲目">✎</button>
+        <button class="admin-edit-chip" type="button" data-edit-track="${index}" title="编辑此曲目">${icon("edit")}</button>
       </li>
     `;
   }).join("");
@@ -1027,7 +1077,7 @@ function updatePlayer() {
   if (favBtn) {
     const isFav = radio.favorites.has(radio.current);
     favBtn.classList.toggle("is-favorite", isFav);
-    favBtn.textContent = isFav ? "♥" : "♡";
+    favBtn.innerHTML = isFav ? icon("heartSolid") : icon("heart");
   }
 
   const vinyl = $("#vinyl");
@@ -1110,7 +1160,7 @@ function initRadioPage() {
   $("#dice-shuffle-btn")?.addEventListener("click", () => {
     const nextIdx = (radio.current + 1 + Math.floor(Math.random() * Math.max(1, radio.tracks.length - 1))) % radio.tracks.length;
     chooseTrack(nextIdx, true);
-    showToast(`🎲 幸运骰子已切至「${radio.tracks[nextIdx].title}」`);
+    showToast(`幸运骰子切到「${radio.tracks[nextIdx].title}」`);
   });
 
   $("#fav-btn")?.addEventListener("click", () => {
@@ -1179,7 +1229,7 @@ function characterCard(character, index) {
   ].filter(Boolean).join(" · ");
   return `
     <a class="character-card" href="${href}" data-char-id="${escapeHtml(character.id)}">
-      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-char="${escapeHtml(character.id)}" title="编辑 ${escapeHtml(character.label)}">✎ 编辑卷宗</span>
+      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-char="${escapeHtml(character.id)}" title="编辑 ${escapeHtml(character.label)}">${icon("edit")}<span>编辑卷宗</span></span>
       <span class="character-art tone-${escapeHtml(character.tone || "pink")}${hasImage ? " has-image" : ""}">
         ${artImage(character.image, character.label)}
         <span class="art-number">${String(index + 1).padStart(2, "0")}</span>
@@ -1189,7 +1239,7 @@ function characterCard(character, index) {
         <span class="character-tag">CASE // ${escapeHtml(character.categoryLabel)} · ${escapeHtml(character.status)}</span>
         <strong class="character-name">${escapeHtml(character.label)}</strong>
         <small class="character-sub">姓名 / ${wrapPendingHtml(character.name)}${metaLine ? ` (${escapeHtml(metaLine)})` : ""}</small>
-        <span class="character-link"><span>调阅调查卷宗</span><b>↗</b></span>
+        <span class="character-link"><span>调阅调查卷宗</span><b>${icon("external")}</b></span>
       </span>
     </a>
   `;
@@ -1300,7 +1350,7 @@ function renderCharacterDetailById(id) {
         </div>
         <div class="appearance-thumb-caption">
           <span>${escapeHtml(g.title)}</span>
-          <small>${g.category === "costume" ? "服装设定" : "角色立绘"} ↗</small>
+          <small>${g.category === "costume" ? "服装设定" : "角色立绘"} ${icon("external")}</small>
         </div>
       </div>
     `)
@@ -1332,13 +1382,13 @@ function renderCharacterDetailById(id) {
           ${artImage(character.image, character.label)}
           <span class="art-number">${number}</span>
           <span class="art-slot${!character.image ? " is-pending-field" : ""}" data-focus-field="image">${character.image ? "角色立绘" : "待补充"}</span>
-          <button class="cover-replace-btn" type="button" data-open-char-field="image">🖼 更换立绘</button>
+          <button class="cover-replace-btn" type="button" data-open-char-field="image">${icon("image")}<span>更换立绘</span></button>
         </div>
         <div class="dossier-info">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
             <p class="eyebrow" style="margin:0">CASE FILE // ${escapeHtml(character.id.toUpperCase())}</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="admin-edit-chip" type="button" data-open-char-editor="${escapeHtml(character.id)}">✎ 编辑角色完整档案</button>
+              <button class="admin-edit-chip" type="button" data-open-char-editor="${escapeHtml(character.id)}">${icon("edit")}<span>编辑角色完整档案</span></button>
               <button class="admin-edit-chip" type="button" data-quick-add-char-gallery="${escapeHtml(character.id)}">+ 新增联动插画/服装图</button>
             </div>
           </div>
@@ -1357,9 +1407,9 @@ function renderCharacterDetailById(id) {
             `).join("")}
           </dl>
           <div class="dossier-actions">
-            <button class="button button-primary admin-only" type="button" data-open-char-editor="${escapeHtml(character.id)}"><span>✎ 编辑角色设定与故事线</span></button>
-            <a class="button button-primary" href="${window.CHIRAKA_SPA_MODE ? "#radio" : "radio.html"}" data-spa-nav="radio"><span>打开城市电台</span><b>↗</b></a>
-            <a class="button button-ghost" href="${window.CHIRAKA_SPA_MODE ? "#characters" : "characters.html"}" data-spa-nav="characters"><span>返回档案列表</span><b>↗</b></a>
+            <button class="button button-primary admin-only" type="button" data-open-char-editor="${escapeHtml(character.id)}"><span>${icon("edit")} 编辑角色设定与故事线</span></button>
+            <a class="button button-primary" href="${window.CHIRAKA_SPA_MODE ? "#radio" : "radio.html"}" data-spa-nav="radio"><span>打开城市电台</span><b>${icon("external")}</b></a>
+            <a class="button button-ghost" href="${window.CHIRAKA_SPA_MODE ? "#characters" : "characters.html"}" data-spa-nav="characters"><span>返回档案列表</span><b>${icon("external")}</b></a>
           </div>
         </div>
       </div>
@@ -1368,7 +1418,7 @@ function renderCharacterDetailById(id) {
         <section class="dossier-section">
           <div class="dossier-section-head" style="justify-content:space-between">
             <div style="display:flex;align-items:baseline;gap:10px"><span>01</span><h2>人物设定与档案摘要</h2></div>
-            <button class="admin-edit-chip" type="button" data-open-char-field="summary">✎ 编辑设定</button>
+            <button class="admin-edit-chip" type="button" data-open-char-field="summary">${icon("edit")}<span>编辑设定</span></button>
           </div>
           <p>${wrapPendingHtml(character.summary, 'data-open-char-field="summary"')}</p>
           <div style="margin-top:12px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.16)">
@@ -1382,7 +1432,7 @@ function renderCharacterDetailById(id) {
             <div style="display:flex;align-items:baseline;gap:10px"><span>02</span><h2>外观与服装设定 · APPEARANCE &amp; OUTFITS</h2></div>
             <div style="display:flex;gap:6px">
               <button class="admin-edit-chip" type="button" data-quick-add-costume="${escapeHtml(character.id)}">+ 上传外观/服装插图</button>
-              <button class="admin-edit-chip" type="button" data-open-char-field="appearance">✎ 编辑外观文字</button>
+              <button class="admin-edit-chip" type="button" data-open-char-field="appearance">${icon("edit")}<span>编辑外观文字</span></button>
             </div>
           </div>
           <p>${wrapPendingHtml(character.appearance, 'data-open-char-field="appearance"')}</p>
@@ -1394,42 +1444,42 @@ function renderCharacterDetailById(id) {
         <section class="dossier-section relation-section">
           <div class="dossier-section-head" style="justify-content:space-between;flex-wrap:wrap">
             <div style="display:flex;align-items:baseline;gap:10px"><span>03</span><h2>角色故事线与联动卷宗 · STORYLINE &amp; LINKED ARCHIVES</h2></div>
-            <button class="admin-edit-chip" type="button" data-open-char-field="storylines">✎ 编辑故事线章节</button>
+            <button class="admin-edit-chip" type="button" data-open-char-field="storylines">${icon("edit")}<span>编辑故事线章节</span></button>
           </div>
           <div class="storyline-list">${storylinesHtml}</div>
 
           <div class="linked-hub-grid">
             <div class="linked-hub-box">
-              <h4>🎨 联动插画与分镜故事 (${linkedGalleryItems.length})</h4>
+              <h4>${icon("palette")} 联动插画与分镜故事 (${linkedGalleryItems.length})</h4>
               <div class="linked-pill-list">
                 ${linkedGalleryItems.map(g => `
                   <button class="linked-jump-item" type="button" data-open-linked-gallery="${escapeHtml(g.id)}">
                     <span><strong>${escapeHtml(g.title)}</strong> · <small style="color:rgba(255,240,250,0.75)">${escapeHtml((g.story || "待补充").slice(0, 22))}${g.story && g.story.length > 22 ? "..." : ""}</small></span>
-                    <b style="color:var(--gold)">查看 ↗</b>
+                    <b style="color:var(--gold)">查看 ${icon("external")}</b>
                   </button>
                 `).join("") || `<small style="color:rgba(255,240,250,0.6)">暂无关联画廊分镜</small>`}
               </div>
             </div>
 
             <div class="linked-hub-box">
-              <h4>💬 关联城市新闻与街头论坛 (${linkedNews.length})</h4>
+              <h4>${icon("comment")} 关联城市新闻与街头论坛 (${linkedNews.length})</h4>
               <div class="linked-pill-list">
                 ${linkedNews.map(n => `
                   <button class="linked-jump-item" type="button" data-jump-article="${escapeHtml(n.id)}">
                     <span>[${escapeHtml(n.category)}] ${escapeHtml(n.title)}</span>
-                    <b style="color:var(--cyan)">↗</b>
+                    <b style="color:var(--cyan)">${icon("external")}</b>
                   </button>
                 `).join("") || `<small style="color:rgba(255,240,250,0.6)">暂无关联新闻或论坛帖</small>`}
               </div>
             </div>
 
             <div class="linked-hub-box">
-              <h4>🎵 角色印象曲 · FM 88.8 (${linkedTracks.length})</h4>
+              <h4>${icon("music")} 角色印象曲 · FM 88.8 (${linkedTracks.length})</h4>
               <div class="linked-pill-list">
                 ${linkedTracks.map(t => `
                   <button class="linked-jump-item" type="button" data-jump-track="${escapeHtml(t.id || "")}">
                     <span>${escapeHtml(t.rank || "A")}${escapeHtml(t.suit || "♥")} ${escapeHtml(t.title)} — ${escapeHtml(t.artist)}</span>
-                    <b style="color:var(--pink)">▶</b>
+                    <b style="color:var(--pink)">${icon("play")}</b>
                   </button>
                 `).join("") || `<small style="color:rgba(255,240,250,0.6)">暂无绑定印象曲</small>`}
               </div>
@@ -1440,7 +1490,7 @@ function renderCharacterDetailById(id) {
         <section class="dossier-section relation-section">
           <div class="dossier-section-head" style="justify-content:space-between">
             <div style="display:flex;align-items:baseline;gap:10px"><span>04</span><h2>红线关系调查板 · EVIDENCE BOARD</h2></div>
-            <button class="admin-edit-chip" type="button" data-open-char-field="relations">✎ 编辑关系网</button>
+            <button class="admin-edit-chip" type="button" data-open-char-field="relations">${icon("edit")}<span>编辑关系网</span></button>
           </div>
           ${renderRelationMap(character, actualIndex)}
         </section>
@@ -1576,22 +1626,22 @@ function newsRow(item) {
   return `
     <a class="news-row" href="${href}" data-news-id="${escapeHtml(item.id)}">
       <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
-        <span class="post-type-badge ${isForum ? "is-forum" : "is-news"}">${isForum ? "💬 街头论坛" : "📰 官方报道"}</span>
-        <span class="news-row-tag" style="background:#160f29;border:1px solid rgba(255,255,255,0.28)">${escapeHtml(item.category)}</span>
+        <span class="post-type-badge ${isForum ? "is-forum" : "is-news"}">${isForum ? icon("comment") + " 街头论坛" : icon("news") + " 官方报道"}</span>
+        <span class="news-row-tag">${escapeHtml(item.category)}</span>
       </div>
       <span class="news-row-copy">
         <strong>${wrapPendingHtml(item.title)}</strong>
         <small>${wrapPendingHtml(item.summary)}</small>
         <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:11px;color:rgba(255,235,245,0.72)">
-          <span>👤 ${escapeHtml(item.author || "匿名")} (${escapeHtml(item.authorRole || "市民")})</span>
-          <span>· 💬 ${replyCount} 条跟帖</span>
-          <span>· ♥ ${item.likes || 0}</span>
+          <span>${icon("user")} ${escapeHtml(item.author || "匿名")} (${escapeHtml(item.authorRole || "市民")})</span>
+          <span>· ${icon("comment")} ${replyCount} 条跟帖</span>
+          <span>· ${icon("heart")} ${item.likes || 0}</span>
           ${charPills}
         </span>
       </span>
       <span style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <span class="news-row-date">${wrapPendingHtml(item.date)}</span>
-        <span class="admin-edit-chip" role="button" tabindex="0" data-edit-news="${escapeHtml(item.id)}">✎ 编辑</span>
+        <span class="admin-edit-chip" role="button" tabindex="0" data-edit-news="${escapeHtml(item.id)}">${icon("edit")}<span>编辑</span></span>
       </span>
     </a>
   `;
@@ -1607,15 +1657,15 @@ function renderNewsSection() {
   const customCats = [...new Set(DATA.news.map(item => item.category))];
   const filterTabs = [
     ["全部", "全部动态"],
-    ["type:news", "📰 官方新闻报道"],
-    ["type:forum", "💬 街头匿名论坛 (BBS)"],
+    ["type:news", icon("news") + " 官方新闻报道"],
+    ["type:forum", icon("comment") + " 街头匿名论坛 (BBS)"],
     ...customCats.map(c => [c, c])
   ];
 
   const filterHost = $("#news-filters");
   if (filterHost) {
     filterHost.innerHTML = filterTabs.map(([val, lbl]) => `
-      <button class="filter-button${val === currentNewsFilter ? " is-selected" : ""}" type="button" data-news-filter="${escapeHtml(val)}">${escapeHtml(lbl)}</button>
+      <button class="filter-button${val === currentNewsFilter ? " is-selected" : ""}" type="button" data-news-filter="${escapeHtml(val)}">${lbl}</button>
     `).join("") + `
       <button class="filter-button admin-only" type="button" id="add-news-btn" style="margin-left:auto;border-color:var(--gold);color:var(--gold)">+ 发布报道 / 论坛新帖</button>
     `;
@@ -1653,22 +1703,22 @@ function renderNewsSection() {
 
   leadHost.innerHTML = `
     <a class="lead-story" href="${leadHref}" data-news-id="${escapeHtml(lead.id)}" style="position:relative">
-      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-news="${escapeHtml(lead.id)}">✎ 编辑主帖</span>
+      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-news="${escapeHtml(lead.id)}">${icon("edit")}<span>编辑主帖</span></span>
       <span class="lead-visual" style="overflow:hidden">
         ${leadImgHtml}
-        <span class="cover-replace-btn" role="button" tabindex="0" data-edit-news-cover="${escapeHtml(lead.id)}">🖼 更换配图</span>
+        <span class="cover-replace-btn" role="button" tabindex="0" data-edit-news-cover="${escapeHtml(lead.id)}">${icon("image")}<span>更换配图</span></span>
       </span>
       <span class="lead-body">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="post-type-badge ${isLeadForum ? "is-forum" : "is-news"}">${isLeadForum ? "💬 街头论坛热帖" : "📰 头版头条报道"}</span>
+          <span class="post-type-badge ${isLeadForum ? "is-forum" : "is-news"}">${isLeadForum ? icon("comment") + " 街头论坛热帖" : icon("news") + " 头版头条报道"}</span>
           <span class="story-tag">${escapeHtml(lead.category)}</span>
           ${renderRelatedCharacterPills(lead.relatedCharacters)}
         </div>
         <h2>${wrapPendingHtml(lead.title)}</h2>
         <p>${wrapPendingHtml(lead.summary)}</p>
         <small style="color:#4d3859;font-weight:700;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span>👤 ${wrapPendingHtml(lead.author)} (${escapeHtml(lead.authorRole || "记者")}) · ${wrapPendingHtml(lead.date)}</span>
-          <span>🔥 热度 ${lead.views || 500} · ♥ ${lead.likes || 0} · 💬 ${leadReplyCount} 条回帖 ↗</span>
+          <span>${icon("user")} ${wrapPendingHtml(lead.author)} (${escapeHtml(lead.authorRole || "记者")}) · ${wrapPendingHtml(lead.date)}</span>
+          <span>${icon("sparkle")} 热度 ${lead.views || 500} · ${icon("heart")} ${lead.likes || 0} · ${icon("comment")} ${leadReplyCount} 条回帖 ${icon("external")}</span>
         </small>
       </span>
     </a>
@@ -1727,7 +1777,7 @@ function renderArticleById(id) {
   const coverBlock = item.image
     ? `<div style="position:relative;margin:14px 0 18px;border:2px solid #fff;border-radius:2px;overflow:hidden;max-height:380px">
          <img src="${escapeHtml(resolveImg(item.image))}" alt="${escapeHtml(item.title)}" style="width:100%;height:100%;object-fit:cover">
-         <button class="cover-replace-btn" type="button" data-edit-article-cover="${escapeHtml(item.id)}">🖼 更换配图</button>
+         <button class="cover-replace-btn" type="button" data-edit-article-cover="${escapeHtml(item.id)}">${icon("image")}<span>更换配图</span></button>
        </div>`
     : "";
 
@@ -1740,11 +1790,11 @@ function renderArticleById(id) {
             <span class="bbs-floor-num">#${idx + 2}L</span>
             <strong style="color:#fff;font-size:14px">${escapeHtml(c.author || "匿名市民")}</strong>
             <span class="bbs-role-tag">${escapeHtml(c.role || "市民")}</span>
-            ${linkedChar ? `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(linkedChar.id)}">🔗 角色卷宗：${escapeHtml(linkedChar.label)} ↗</span>` : ""}
+            ${linkedChar ? `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(linkedChar.id)}">${icon("link")} 角色卷宗：${escapeHtml(linkedChar.label)} ${icon("external")}</span>` : ""}
             <small style="color:rgba(255,235,245,0.6)">${escapeHtml(c.time || "刚刚")}</small>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <button class="admin-tool-btn" type="button" data-like-comment="${idx}" style="padding:3px 9px;font-size:11px">♥ 赞 (${c.likes || 0})</button>
+            <button class="admin-tool-btn" type="button" data-like-comment="${idx}" style="padding:3px 9px;font-size:11px">${icon("heart")} 赞 (${c.likes || 0})</button>
             <button class="admin-edit-chip" type="button" data-delete-comment="${idx}">× 删除此楼</button>
           </div>
         </div>
@@ -1760,23 +1810,23 @@ function renderArticleById(id) {
   host.innerHTML = `
     <article class="article">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <a class="article-back" href="${window.CHIRAKA_SPA_MODE ? "#news" : "news.html"}" data-spa-nav="news">← 返回新闻与街头论坛</a>
+        <a class="article-back" href="${window.CHIRAKA_SPA_MODE ? "#news" : "news.html"}" data-spa-nav="news">${icon("arrowLeft")} 返回新闻与街头论坛</a>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="button button-ghost" type="button" id="like-main-post-btn" style="padding:8px 14px"><span>♥ 点赞主帖 (${item.likes || 0})</span></button>
-          <button class="button button-primary admin-only" type="button" data-edit-article="${escapeHtml(item.id)}"><span>✎ 编辑主帖 / 关联角色</span></button>
+          <button class="button button-ghost" type="button" id="like-main-post-btn" style="padding:8px 14px"><span>${icon("heart")} 点赞主帖 (${item.likes || 0})</span></button>
+          <button class="button button-primary admin-only" type="button" data-edit-article="${escapeHtml(item.id)}"><span>${icon("edit")} 编辑主帖 / 关联角色</span></button>
         </div>
       </div>
 
       <header style="margin:18px 0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <span class="post-type-badge ${isForum ? "is-forum" : "is-news"}">${isForum ? "💬 街头匿名论坛 · NIGHT BBS" : "📰 官方调查报道 · CITY DESK"}</span>
+          <span class="post-type-badge ${isForum ? "is-forum" : "is-news"}">${isForum ? icon("comment") + " 街头匿名论坛 · NIGHT BBS" : icon("news") + " 官方调查报道 · CITY DESK"}</span>
           <span class="story-tag">${escapeHtml(item.category)}</span>
           <span class="bbs-floor-num">#1L 楼主</span>
           ${renderRelatedCharacterPills(item.relatedCharacters)}
         </div>
         <h1 style="margin:10px 0 8px;font:900 30px/1.25 var(--cn)">${wrapPendingHtml(item.title, `data-edit-article="${escapeHtml(item.id)}"`)}</h1>
         <p style="color:var(--gold);margin:0;font-weight:700;font-size:13px">
-          👤 ${wrapPendingHtml(item.author, `data-edit-article="${escapeHtml(item.id)}"`)} (${escapeHtml(item.authorRole || "楼主/记者")}) · 🕒 ${wrapPendingHtml(item.date, `data-edit-article="${escapeHtml(item.id)}"`)} · 🔥 浏览 ${item.views || 320}
+          ${icon("user")} ${wrapPendingHtml(item.author, `data-edit-article="${escapeHtml(item.id)}"`)} (${escapeHtml(item.authorRole || "楼主/记者")}) · ${icon("clock")} ${wrapPendingHtml(item.date, `data-edit-article="${escapeHtml(item.id)}"`)} · ${icon("sparkle")} 浏览 ${item.views || 320}
         </p>
       </header>
 
@@ -1789,7 +1839,7 @@ function renderArticleById(id) {
       <!-- 街头跟帖盖楼区 -->
       <section class="bbs-comments-section" aria-label="街头跟帖盖楼">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <h2 style="margin:0;font:900 19px/1.2 var(--cn);color:var(--cyan)">💬 街头跟帖盖楼 · NIGHT BBS REPLIES (${item.comments.length})</h2>
+          <h2 style="margin:0;font:900 19px/1.2 var(--cn);color:var(--cyan)">${icon("comment")} 街头跟帖盖楼 · NIGHT BBS REPLIES (${item.comments.length})</h2>
           <small style="color:rgba(255,235,245,0.7)">支持以市民或角色身份跟帖互动</small>
         </div>
 
@@ -1798,7 +1848,7 @@ function renderArticleById(id) {
         </div>
 
         <form class="bbs-reply-box" id="bbs-reply-form">
-          <h3 style="margin:0 0 12px;font:800 15px/1.2 var(--cn);color:var(--gold)">✦ 发表街头跟帖 / 盖楼回复</h3>
+          <h3 style="margin:0 0 12px;font:800 15px/1.2 var(--cn);color:var(--gold)">${icon("sparkle")} 发表街头跟帖 / 盖楼回复</h3>
           <div class="form-grid" style="margin-bottom:10px">
             <div class="form-field">
               <label for="reply-char-select">选择回帖身份（可联动角色档案）</label>
@@ -1816,7 +1866,7 @@ function renderArticleById(id) {
             <textarea class="form-textarea" id="reply-content-input" placeholder="输入跟帖内容..." style="min-height:70px" required></textarea>
           </div>
           <div style="display:flex;justify-content:flex-end">
-            <button class="button button-primary" type="submit"><span>发送回帖 // POST REPLY</span><b>↵</b></button>
+            <button class="button button-primary" type="submit"><span>发送回帖 // POST REPLY</span><b>${icon("arrowRight")}</b></button>
           </div>
         </form>
       </section>
@@ -1830,7 +1880,7 @@ function renderArticleById(id) {
 
   $("#like-main-post-btn", host)?.addEventListener("click", () => {
     item.likes = (item.likes || 0) + 1;
-    saveSiteData("♥ 已为该帖点赞");
+    saveSiteData("已为该帖点赞");
   });
 
   $$("[data-like-comment]", host).forEach(btn => {
@@ -1847,7 +1897,7 @@ function renderArticleById(id) {
     btn.addEventListener("click", () => {
       const cIdx = Number(btn.dataset.deleteComment);
       item.comments.splice(cIdx, 1);
-      saveSiteData("🗑 已删除该楼层回复");
+      saveSiteData("已删除该楼层回复");
     });
   });
 
@@ -1879,7 +1929,7 @@ function renderArticleById(id) {
       likes: 1,
       content
     });
-    saveSiteData("💬 回帖成功！已盖上新楼层");
+    saveSiteData("回帖成功，已盖上新楼层");
   });
 
   $$("[data-edit-article]", host).forEach(el => {
@@ -1939,7 +1989,7 @@ function galleryTile(item, index) {
   const storyText = item.story || item.meta || "待补充";
   return `
     <div class="gallery-tile${span}" role="button" tabindex="0" data-gallery-id="${escapeHtml(item.id)}">
-      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-gallery="${escapeHtml(item.id)}">✎ 编辑分镜</span>
+      <span class="admin-edit-chip admin-card-floating" role="button" tabindex="0" data-edit-gallery="${escapeHtml(item.id)}">${icon("edit")}<span>编辑分镜</span></span>
       <span class="tile-art tone-${escapeHtml(item.tone || "pink")}${hasImage ? " has-image" : ""}">
         ${artImage(item.src, item.title)}
         <span class="tile-mark">${String(index + 1).padStart(2, "0")}</span>
@@ -1947,7 +1997,7 @@ function galleryTile(item, index) {
       </span>
       <span class="tile-info">
         <strong>${escapeHtml(item.title)}</strong>
-        <small>${linkedChar ? `🔗 ${escapeHtml(linkedChar.label)}` : wrapPendingHtml(storyText.slice(0, 10))}</small>
+        <small>${linkedChar ? `${icon("link")} ${escapeHtml(linkedChar.label)}` : wrapPendingHtml(storyText.slice(0, 10))}</small>
       </span>
     </div>
   `;
@@ -2039,7 +2089,7 @@ function openGalleryItem(id) {
     art.innerHTML = `
       ${artImage(item.src, item.title)}
       <span class="tile-slot">${item.src ? "原图预览" : "待补充原图"}</span>
-      <button class="cover-replace-btn" type="button" id="lightbox-replace-img-btn">🖼 更换插画原图</button>
+      <button class="cover-replace-btn" type="button" id="lightbox-replace-img-btn">${icon("image")}<span>更换插画原图</span></button>
     `;
     $("#lightbox-replace-img-btn", art)?.addEventListener("click", () => {
       dialog.close();
@@ -2056,12 +2106,12 @@ function openGalleryItem(id) {
     metaEl.innerHTML = `
       <div style="border-bottom:none;padding-bottom:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         ${linkedChar
-          ? `<button class="char-link-pill" type="button" id="lightbox-jump-char-btn">🔗 关联角色档案：${escapeHtml(getCharacterDisplayName(linkedChar))} ↗</button>`
+          ? `<button class="char-link-pill" type="button" id="lightbox-jump-char-btn">${icon("link")} 关联角色档案：${escapeHtml(getCharacterDisplayName(linkedChar))} ${icon("external")}</button>`
           : `<span style="font-size:12px;color:rgba(255,235,245,0.65)">未绑定特定角色（可在编辑中绑定角色实现双向联动）</span>`
         }
       </div>
       <div class="lightbox-story-card" style="display:block;border-bottom:none">
-        <strong style="display:block;font-size:12px;color:var(--gold);margin-bottom:6px;letter-spacing:0.08em">✦ 画面背后的故事 // STORY &amp; SCENE NOTE</strong>
+        <strong style="display:block;font-size:12px;color:var(--gold);margin-bottom:6px;letter-spacing:0.08em">${icon("sparkle")} 画面背后的故事 // STORY &amp; SCENE NOTE</strong>
         <div>${wrapPendingHtml(storyContent)}</div>
       </div>
     `;
@@ -2083,7 +2133,7 @@ function openGalleryItem(id) {
   if (editWrap) {
     editWrap.innerHTML = `
       <button class="button button-primary admin-only" type="button" id="lightbox-edit-btn" style="width:100%;justify-content:center">
-        <span>✎ 编辑插画、关联角色与分镜故事</span>
+        <span>${icon("edit")} 编辑插画、关联角色与分镜故事</span>
       </button>
     `;
     $("#lightbox-edit-btn", editWrap)?.addEventListener("click", () => {
@@ -2159,7 +2209,7 @@ function buildImageFieldHtml(fieldId, labelText, currentVal) {
       <div class="upload-row">
         <label class="upload-drop-zone${hasFile ? " is-has-file" : ""}" data-drop-target="${fieldId}">
           <span class="drop-inner">
-            <span class="drop-badge" aria-hidden="true">🖼</span>
+            <span class="drop-badge" aria-hidden="true">${icon("image")}</span>
             <span class="drop-text">拖拽图片到这里<small> · 或点一下选本地图片</small></span>
           </span>
           <input type="file" accept="image/*" data-upload-target="${fieldId}" style="display:none">
@@ -2174,13 +2224,13 @@ function buildImageFieldHtml(fieldId, labelText, currentVal) {
 function applyPickedImage(file, inputEl, zoneEl, container) {
   if (!file) return;
   if (file.type && !file.type.startsWith("image/")) {
-    showToast("⚠ 只能上传图片文件（jpg / png / webp）");
+    showToast("只能上传图片文件（jpg / png / webp）");
     return;
   }
   readImageFileAsDataUrl(file, dataUrl => {
     inputEl.value = dataUrl;
     if (zoneEl) zoneEl.classList.add("is-has-file");
-    showToast("✓ 图片已就位，点击右下角【保存修改】即可生效");
+    showToast("图片已就位，点击右下角【保存修改】即可生效");
   });
 }
 
@@ -2545,7 +2595,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
     });
 
     if (!isNew && DATA.characters.length > 1) {
-      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">🗑 删除此角色卷宗</button>`;
+      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">${icon("trash")}<span>删除此角色卷宗</span></button>`;
       $("#delete-entity-btn", footLeft)?.addEventListener("click", () => {
         DATA.characters = DATA.characters.filter(c => c.id !== charObj.id);
         dialog.close();
@@ -2553,7 +2603,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         if (currentCharacterId === charObj.id && DATA.characters[0]) {
           currentCharacterId = DATA.characters[0].id;
         }
-        saveSiteData(`🗑 已删除角色「${charObj.label}」`);
+        saveSiteData(`已删除角色「${charObj.label}」`);
       });
     }
   } else if (type === "news") {
@@ -2599,8 +2649,8 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         <div class="form-field">
           <label for="ed-news-posttype">发布类型 (新闻报道 / 街头论坛)</label>
           <select class="form-select" id="ed-news-posttype">
-            <option value="news"${newsObj.postType !== "forum" ? " selected" : ""}>📰 官方城市新闻报道 (City Desk)</option>
-            <option value="forum"${newsObj.postType === "forum" ? " selected" : ""}>💬 街头匿名论坛帖子 (Night BBS)</option>
+            <option value="news"${newsObj.postType !== "forum" ? " selected" : ""}>${icon("news")} 官方城市新闻报道 (City Desk)</option>
+            <option value="forum"${newsObj.postType === "forum" ? " selected" : ""}>${icon("comment")} 街头匿名论坛帖子 (Night BBS)</option>
           </select>
         </div>
         <div class="form-field">
@@ -2646,7 +2696,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
     wireImageUploadControls(bodyEl);
 
     if (!isNew && DATA.news.length > 1) {
-      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">🗑 删除此篇报道/帖子</button>`;
+      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">${icon("trash")}<span>删除此篇报道/帖子</span></button>`;
       $("#delete-entity-btn", footLeft)?.addEventListener("click", () => {
         DATA.news = DATA.news.filter(n => n.id !== newsObj.id);
         dialog.close();
@@ -2654,7 +2704,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         if (currentArticleId === newsObj.id && DATA.news[0]) {
           currentArticleId = DATA.news[0].id;
         }
-        saveSiteData(`🗑 已删除「${newsObj.title}」`);
+        saveSiteData(`已删除「${newsObj.title}」`);
       });
     }
   } else if (type === "gallery") {
@@ -2727,12 +2777,12 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
     wireImageUploadControls(bodyEl);
 
     if (!isNew && DATA.gallery.length > 1) {
-      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">🗑 删除此分镜</button>`;
+      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">${icon("trash")}<span>删除此分镜</span></button>`;
       $("#delete-entity-btn", footLeft)?.addEventListener("click", () => {
         DATA.gallery = DATA.gallery.filter(g => g.id !== galObj.id);
         dialog.close();
         document.body.classList.remove("has-dialog");
-        saveSiteData(`🗑 已删除画廊分镜「${galObj.title}」`);
+        saveSiteData(`已删除画廊分镜「${galObj.title}」`);
       });
     }
   } else if (type === "stations") {
@@ -2784,7 +2834,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       $$(".st-del-btn", stListEl).forEach(btn => {
         btn.onclick = () => {
           if ($$(".station-edit-row", stListEl).length <= 1) {
-            showToast("⚠ 至少需要保留一个电台频段");
+            showToast("至少需要保留一个电台频段");
             return;
           }
           btn.closest(".station-edit-row")?.remove();
@@ -2887,7 +2937,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
           <div class="upload-row">
             <label class="upload-drop-zone" data-audio-zone>
               <span class="drop-inner">
-                <span class="drop-badge" aria-hidden="true">🎵</span>
+                <span class="drop-badge" aria-hidden="true">${icon("music")}</span>
                 <span class="drop-text">上传音频文件<small> · 拖 mp3 进来或点一下选文件</small></span>
               </span>
               <input type="file" accept="audio/*" id="ed-track-audio-file" style="display:none">
@@ -2903,7 +2953,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
           </label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input class="form-input" id="ed-track-netease" value="${escapeHtml(trackObj.neteaseUrl || "")}" placeholder="https://music.163.com/#/song?id=186016 或 .../playlist?id=24381616" style="flex:1 1 260px">
-            <button class="admin-tool-btn is-gold" type="button" id="ed-track-netease-parse" style="flex-shrink:0">🔍 解析并填充</button>
+            <button class="admin-tool-btn is-gold" type="button" id="ed-track-netease-parse" style="flex-shrink:0">${icon("search")}<span>解析并填充</span></button>
           </div>
           <p id="ed-track-netease-hint" style="margin:6px 0 0;font-size:11.5px;color:rgba(255,240,250,0.66)">${
             trackObj.neteaseId
@@ -2924,10 +2974,10 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       const hint = $("#ed-track-netease-hint", bodyEl);
       const parsed = parseNeteaseLink(input?.value || "");
       if (!parsed) {
-        showToast("⚠ 链接里没识别到歌曲或歌单 ID");
+        showToast("链接里没识别到歌曲或歌单 ID");
         return;
       }
-      if (hint) hint.textContent = "⏳ 正在解析…";
+      if (hint) hint.textContent = "正在解析…";
       const meta = await fetchNeteaseMeta(parsed);
       if (!meta || !meta.ok) {
         if (parsed.kind === "song") {
@@ -2937,7 +2987,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
           activeEditorContext.neteasePlaylistId = parsed.id;
           if (hint) hint.textContent = `已记下歌单 ID：${parsed.id}（在线解析失败，可直接保存）`;
         }
-        showToast("✓ 已识别 ID，保存后即可嵌入播放");
+        showToast("已识别 ID，保存后即可嵌入播放");
         return;
       }
       if (meta.kind === "song") {
@@ -2948,13 +2998,13 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         setVal("#ed-track-artist", meta.artist);
         setVal("#ed-track-duration", meta.duration);
         setVal("#ed-track-cover", meta.cover);
-        if (hint) hint.textContent = `✓ 已填充：${meta.title} — ${meta.artist}${meta.duration ? ` · ${meta.duration}` : ""}`;
-        showToast("✓ 已按网易云信息填好，检查后点保存");
+        if (hint) hint.textContent = `已填充：${meta.title} — ${meta.artist}${meta.duration ? ` · ${meta.duration}` : ""}`;
+        showToast("已按网易云信息填好，检查后点保存");
       } else {
         activeEditorContext.neteasePlaylistId = meta.id;
         activeEditorContext.neteaseSongId = "";
-        if (hint) hint.textContent = `✓ 已绑定歌单：《${meta.title}》· ${meta.trackCount} 首（播放页可展开整张歌单）`;
-        showToast("✓ 歌单已绑定，保存后生效");
+        if (hint) hint.textContent = `已绑定歌单：《${meta.title}》· ${meta.trackCount} 首（播放页可展开整张歌单）`;
+        showToast("歌单已绑定，保存后生效");
       }
     });
 
@@ -2972,28 +3022,28 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       };
 
       if (file.type && !file.type.startsWith("audio/") && !/\.(mp3|ogg|m4a|wav|flac|aac)$/i.test(file.name || "")) {
-        setStatus("⚠ 只能上传音频文件（mp3 / m4a / ogg / wav）");
-        showToast("⚠ 只能上传音频文件");
+        setStatus("只能上传音频文件（mp3 / m4a / ogg / wav）");
+        showToast("只能上传音频文件");
         return;
       }
 
       const niceSize = file.size > 1024 * 1024
         ? `${(file.size / 1024 / 1024).toFixed(1)}MB`
         : `${Math.round(file.size / 1024)}KB`;
-      setStatus(`⏫ 正在上传「${file.name}」(${niceSize})… 0%`);
+      setStatus(`正在上传「${file.name}」(${niceSize})… 0%`);
 
       const duration = await readAudioDuration(file);
-      const result = await uploadAudioToServer(file, pct => setStatus(`⏫ 正在上传「${file.name}」(${niceSize})… ${pct}%`));
+      const result = await uploadAudioToServer(file, pct => setStatus(`正在上传「${file.name}」(${niceSize})… ${pct}%`));
 
       if (!result.ok) {
-        setStatus(`⚠ ${result.error}`);
-        showToast(`⚠ ${result.error}`);
+        setStatus(`${result.error}`);
+        showToast(`${result.error}`);
         return;
       }
       if (srcInput) srcInput.value = result.url;
       if (durationInput && duration) durationInput.value = duration;
-      setStatus(`✓ 已上传并绑定：${result.url}${duration ? ` · 时长 ${duration}` : ""}`);
-      showToast("✓ 音频已上传到云端，点【保存修改】后就能在唱机里播");
+      setStatus(`已上传并绑定：${result.url}${duration ? ` · 时长 ${duration}` : ""}`);
+      showToast("音频已上传到云端，点【保存修改】后就能在唱机里播");
     };
 
     $("#ed-track-audio-file", bodyEl)?.addEventListener("change", e => {
@@ -3033,13 +3083,13 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
     });
 
     if (!isNew && DATA.tracks.length > 1) {
-      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">🗑 删除此歌曲</button>`;
+      footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">${icon("trash")}<span>删除此歌曲</span></button>`;
       $("#delete-entity-btn", footLeft)?.addEventListener("click", () => {
         DATA.tracks.splice(idx, 1);
         if (radio.current >= DATA.tracks.length) radio.current = 0;
         dialog.close();
         document.body.classList.remove("has-dialog");
-        saveSiteData(`🗑 已删除歌曲「${trackObj.title}」`);
+        saveSiteData(`已删除歌曲「${trackObj.title}」`);
       });
     }
   }
@@ -3074,7 +3124,7 @@ function handleEditorFormSubmit(e) {
     DATA.home.mottoCn = $("#ed-motto-cn")?.value.trim() || "";
     DATA.home.mottoEn = $("#ed-motto-en")?.value.trim() || "";
     DATA.home.backdrop = $("#ed-home-backdrop")?.value.trim() || "assets/bg/city-sunset.jpg";
-    saveSiteData("✓ 城市首页标语与背景已更新");
+    saveSiteData("城市首页标语与背景已更新");
   } else if (type === "home-folder") {
     const folders = getArchiveFolders();
     const idx = Number(targetId) || 0;
@@ -3090,7 +3140,7 @@ function handleEditorFormSubmit(e) {
       f.photo = $("#ed-folder-photo")?.value.trim() || f.photo;
       const rawPills = $("#ed-folder-pills")?.value || "";
       f.pills = rawPills.split(/[,，]/).map(s => s.trim()).filter(Boolean);
-      saveSiteData(`✓ 首页调查板「${f.label}」封面与入口文案已更新`);
+      saveSiteData(`首页调查板「${f.label}」封面与入口文案已更新`);
     }
   } else if (type === "character") {
     const { charObj, isNew } = activeEditorContext;
@@ -3131,7 +3181,7 @@ function handleEditorFormSubmit(e) {
       DATA.characters.push(charObj);
       currentCharacterId = charObj.id;
     }
-    saveSiteData(`✓ 角色卷宗「${charObj.label}」已保存`);
+    saveSiteData(`角色卷宗「${charObj.label}」已保存`);
   } else if (type === "news") {
     const { newsObj, isNew } = activeEditorContext;
     newsObj.postType = $("#ed-news-posttype")?.value || "news";
@@ -3153,7 +3203,7 @@ function handleEditorFormSubmit(e) {
       DATA.news.unshift(newsObj);
       currentArticleId = newsObj.id;
     }
-    saveSiteData(`✓ 「${newsObj.title}」已保存`);
+    saveSiteData(`「${newsObj.title}」已保存`);
   } else if (type === "gallery") {
     const { galObj, isNew } = activeEditorContext;
     galObj.title = $("#ed-gal-title")?.value.trim() || galObj.title;
@@ -3168,7 +3218,7 @@ function handleEditorFormSubmit(e) {
     if (isNew) {
       DATA.gallery.push(galObj);
     }
-    saveSiteData(`✓ 画廊分镜「${galObj.title}」已保存并同步关联角色档案`);
+    saveSiteData(`画廊分镜「${galObj.title}」已保存并同步关联角色档案`);
   } else if (type === "stations") {
     const rows = $$("#ed-stations-list .station-edit-row");
     const updatedStations = rows.map(row => {
@@ -3185,7 +3235,7 @@ function handleEditorFormSubmit(e) {
     });
     if (updatedStations.length) {
       DATA.stations = updatedStations;
-      saveSiteData("✓ 电台频段列表已更新");
+      saveSiteData("电台频段列表已更新");
     }
   } else if (type === "track") {
     const { trackObj, isNew } = activeEditorContext;
@@ -3220,7 +3270,7 @@ function handleEditorFormSubmit(e) {
       DATA.tracks.push(trackObj);
       radio.current = DATA.tracks.length - 1;
     }
-    saveSiteData(`✓ 电台歌曲「${trackObj.title}」已保存`);
+    saveSiteData(`电台歌曲「${trackObj.title}」已保存`);
   }
 
   if (dialog) {
@@ -3244,13 +3294,13 @@ function openPendingChecklistModal() {
   if (!pendingList.length) {
     bodyEl.innerHTML = `
       <div style="padding:28px;text-align:center;background:#21143a;border:1.5px solid var(--mint);border-radius:3px">
-        <strong style="font-size:18px;color:var(--mint)">✦ 恭喜！全站所有“待补充”字段均已填写完毕！</strong>
-        <p style="margin:8px 0 0;color:rgba(255,240,250,0.8)">你仍然可以随时点击任意卡片上的「✎ 编辑」按钮继续微调内容。</p>
+        <strong style="font-size:18px;color:var(--mint)">${icon("sparkle")} 恭喜！全站所有“待补充”字段均已填写完毕！</strong>
+        <p style="margin:8px 0 0;color:rgba(255,240,250,0.8)">你仍然可以随时点击任意卡片上的「编辑」按钮继续微调内容。</p>
       </div>
     `;
   } else {
     bodyEl.innerHTML = `
-      <p style="margin:0;font-size:13px;color:rgba(255,240,250,0.85)">点击右侧「去补充 ✎」按钮，可直接打开对应条目的编辑窗口进行填写：</p>
+      <p style="margin:0;font-size:13px;color:rgba(255,240,250,0.85)">点击右侧「去补充」按钮，可直接打开对应条目的编辑窗口进行填写：</p>
       <div class="pending-list-grid">
         ${pendingList.map(item => `
           <div class="pending-item-row">
@@ -3258,7 +3308,7 @@ function openPendingChecklistModal() {
               <strong>${escapeHtml(item.title)}</strong>
               <small>${escapeHtml(item.detail)}</small>
             </div>
-            <button class="admin-tool-btn is-gold" type="button" data-jump-type="${escapeHtml(item.type)}" data-jump-id="${escapeHtml(item.id)}">去补充 ✎</button>
+            <button class="admin-tool-btn is-gold" type="button" data-jump-type="${escapeHtml(item.type)}" data-jump-id="${escapeHtml(item.id)}">去补充${icon("edit")}</button>
           </div>
         `).join("")}
       </div>
@@ -3292,7 +3342,7 @@ function openBackupAndSettingsModal() {
   bodyEl.innerHTML = `
     <div class="form-grid">
       <div class="form-field span-2" style="padding:12px 14px;background:#21143a;border-left:3px solid var(--mint);border-radius:2px">
-        <strong style="color:var(--mint);font-size:13px">☁ 保存后自动同步到服务器，访客刷新即可看到</strong>
+        <strong style="color:var(--mint);font-size:13px">${icon("cloud")} 保存后自动同步到服务器，访客刷新即可看到</strong>
         <p style="margin:4px 0 0;font-size:12px;color:rgba(255,240,250,0.84)">
           每次点【保存修改】都会直接写入云端数据库，不需要再导出文件或替换代码。右下角会显示最近一次保存的时间。
         </p>
@@ -3318,27 +3368,27 @@ function openBackupAndSettingsModal() {
     const url = ($("#remote-api-url-input", bodyEl)?.value || "").trim() || "/api/content";
     authState.setApiUrl(url);
     const ok = await syncDataToRemoteServer();
-    showToast(ok ? `☁ 已连接并同步至接口 ${url}` : `✓ 接口地址已设为 ${url}（本地预览已缓存）`);
+    showToast(ok ? `已连接并同步至接口 ${url}` : `接口地址已设为 ${url}（本地预览已缓存）`);
   });
 
   $("#save-new-pass-btn", bodyEl)?.addEventListener("click", async () => {
     const val = $("#new-admin-pass-input", bodyEl)?.value.trim();
     if (!val) {
-      showToast("⚠ 口令不能为空");
+      showToast("口令不能为空");
       return;
     }
     if (val.length < 6) {
-      showToast("⚠ 新口令至少 6 位");
+      showToast("新口令至少 6 位");
       return;
     }
     const oldPass = authState.getPasscode();
     const verdict = await changePasscodeOnServer(oldPass, val);
     if (verdict === false) {
-      showToast("⚠ 旧口令校验失败，未修改（请确认当前口令）");
+      showToast("旧口令校验失败，未修改（请确认当前口令）");
       return;
     }
     authState.setPasscode(val);
-    showToast(verdict === null ? "✓ 已更新本地口令（服务端未连通）" : "✓ 管理员口令已更新，并已写入服务端");
+    showToast(verdict === null ? "已更新本地口令（服务端未连通）" : "管理员口令已更新，并已写入服务端");
   });
 
   if (typeof dialog.showModal === "function" && !dialog.open) {
@@ -3375,7 +3425,7 @@ function openResetConfirmModal() {
     Object.assign(DATA, fresh);
     dialog.close();
     document.body.classList.remove("has-dialog");
-    saveSiteData("↺ 已恢复为初始默认数据");
+    saveSiteData("已恢复为初始默认数据");
   });
 
   if (typeof dialog.showModal === "function" && !dialog.open) {
@@ -3416,7 +3466,7 @@ function openQuickAddModal() {
       </button>
       <button class="auth-card" type="button" data-quick-create="stations" style="text-align:left;cursor:pointer">
         <span class="auth-card-tag">04 FM STATIONS</span>
-        <h3>⚙ 管理/新增电台频段</h3>
+        <h3>${icon("gear")} 管理/新增电台频段</h3>
         <p>自定义左侧电台频段列表、广播频率 (FM)、筹码花色与 DJ 署名。</p>
       </button>
     </div>
@@ -3479,7 +3529,7 @@ function initAuthAndAdminSystem() {
     const errEl = $("#auth-error-msg");
     const entered = (passInput?.value || "").trim();
     if (!entered) {
-      if (errEl) errEl.textContent = "⚠ 请输入管理员口令";
+      if (errEl) errEl.textContent = "请输入管理员口令";
       return;
     }
     const closeAndEnter = () => {
@@ -3492,20 +3542,20 @@ function initAuthAndAdminSystem() {
         document.body.classList.remove("has-dialog");
       }
     };
-    if (errEl) errEl.textContent = "⏳ 正在校验口令…";
+    if (errEl) errEl.textContent = "正在校验口令…";
     const serverVerdict = await verifyPasscodeOnServer(entered);
     if (serverVerdict === null) {
       if (entered === authState.getPasscode()) {
         closeAndEnter();
       } else if (errEl) {
-        errEl.textContent = "⚠ 离线预览模式下仅本地口令可用";
+        errEl.textContent = "离线预览模式下仅本地口令可用";
       }
       return;
     }
     if (serverVerdict) {
       closeAndEnter();
     } else if (errEl) {
-      errEl.textContent = "⚠ 通行口令不正确";
+      errEl.textContent = "通行口令不正确";
     }
   };
 
