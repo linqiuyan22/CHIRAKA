@@ -2508,80 +2508,56 @@ label .icon + span,
   font-variant-emoji: text;
 }
 
-/* RC-7 城市新闻 / 论坛徽章：游戏 HUD 切角标签（替换旧圆角实心徽章，避免 emoji 观感） */
+/* RC-7 城市新闻 / 论坛徽章：克制的 HUD 切角标签，配色跟随站点淡粉淡蓝 */
 .post-type-badge.is-news,
 .post-type-badge.is-forum,
 .story-tag,
 .news-row-tag,
 .char-link-pill {
-  --hud-rgb: 255, 208, 91;
+  --hud-rgb: 198, 190, 220;
+  --hud-ink: #e9e3f6;
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 13px 5px 11px;
+  gap: 5px;
+  padding: 4px 10px;
   border: 1px solid transparent;
   border-radius: 0;
+  background-color: transparent;
   background-image:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, rgba(14, 9, 26, 0.92), rgba(14, 9, 26, 0.78)),
-    linear-gradient(118deg, rgba(var(--hud-rgb), 0.92), rgba(var(--hud-rgb), 0.2) 62%, rgba(var(--hud-rgb), 0.62));
+    linear-gradient(180deg, rgba(19, 12, 33, 0.72), rgba(19, 12, 33, 0.5)),
+    linear-gradient(128deg, rgba(var(--hud-rgb), 0.46), rgba(var(--hud-rgb), 0.12) 58%, rgba(var(--hud-rgb), 0.3));
   background-origin: border-box;
-  background-clip: padding-box, padding-box, border-box;
-  color: #fff;
-  font: 700 11px/1.1 var(--cn);
-  letter-spacing: 0.08em;
+  background-clip: padding-box, border-box;
+  color: var(--hud-ink);
+  font: 700 10.5px/1.1 var(--cn);
+  letter-spacing: 0.05em;
   white-space: nowrap;
-  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
-  text-shadow: 0 0 6px rgba(var(--hud-rgb), 0.35);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 
-.post-type-badge.is-news { --hud-rgb: 255, 61, 139; }
-.post-type-badge.is-forum { --hud-rgb: 60, 232, 255; }
-.story-tag,
-.news-row-tag { --hud-rgb: 255, 208, 91; }
-.char-link-pill { --hud-rgb: 56, 242, 184; }
-
-/* 左侧 HUD 刻度条 */
-.post-type-badge.is-news::before,
-.post-type-badge.is-forum::before,
-.story-tag::before,
-.news-row-tag::before,
-.char-link-pill::before {
-  content: "";
-  flex: none;
-  width: 2px;
-  height: 9px;
-  background: rgb(var(--hud-rgb));
-  box-shadow: 0 0 8px rgba(var(--hud-rgb), 0.95);
-}
+.post-type-badge.is-news { --hud-rgb: 255, 61, 139; --hud-ink: #ffd7e6; }
+.post-type-badge.is-forum { --hud-rgb: 122, 200, 236; --hud-ink: #d7f0fb; }
+.char-link-pill { --hud-rgb: 255, 208, 91; --hud-ink: #ffe7b4; }
 
 .post-type-badge .icon,
 .story-tag .icon,
 .news-row-tag .icon,
 .char-link-pill .icon {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   flex: none;
+  opacity: 0.85;
   color: rgb(var(--hud-rgb));
-  filter: drop-shadow(0 0 5px rgba(var(--hud-rgb), 0.7));
 }
 
-/* 头条里那排徽章不要被文字基线拉歪 */
-.lead-body > div > .post-type-badge,
-.lead-body > div > .story-tag { vertical-align: middle; }
-
-/* 角色联动 pill 保持可点击手感 */
 .char-link-pill {
   cursor: pointer;
-  transition: background-image 0.16s ease, transform 0.16s ease;
+  transition: background-image 0.16s ease;
 }
 .char-link-pill:hover,
 .char-link-pill:focus-visible {
   background-image:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, rgba(22, 14, 38, 0.94), rgba(22, 14, 38, 0.84)),
-    linear-gradient(118deg, rgba(var(--hud-rgb), 1), rgba(var(--hud-rgb), 0.34) 62%, rgba(var(--hud-rgb), 0.8));
-  transform: translateX(1px);
+    linear-gradient(180deg, rgba(26, 17, 44, 0.8), rgba(26, 17, 44, 0.62)),
+    linear-gradient(128deg, rgba(var(--hud-rgb), 0.72), rgba(var(--hud-rgb), 0.22) 58%, rgba(var(--hud-rgb), 0.5));
 }
