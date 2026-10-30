@@ -1,9 +1,13 @@
+# Pages headers
+# HTML/JS/CSS: always revalidate so edits show up immediately
 /*
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
 
+# Fonts: filenames are versioned, cache forever
 /assets/fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Background images
 /assets/bg/*
   Cache-Control: public, max-age=86400
