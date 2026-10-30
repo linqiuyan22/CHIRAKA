@@ -297,6 +297,55 @@ function setSyncStatus(state, iso) {
   }
 }
 
+async function uploadAudioToServer(file, onProgress) {
+  const base = (window.CHIRAKA_DATA_CONFIG?.apiEndpoint || "/api/content").replace(/\/content\/?$/, "");
+  const form = new FormData();
+  form.append("file", file, file.name || "audio.mp3");
+
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${base}/audio`, true);
+    xhr.setRequestHeader("x-chiraka-pass", authState.getPasscode());
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable && typeof onProgress === "function") {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      let payload = null;
+      try {
+        payload = JSON.parse(xhr.responseText);
+      } catch (e) {}
+      if (xhr.status >= 200 && xhr.status < 300 && payload && payload.ok) {
+        resolve({ ok: true, url: payload.url, size: payload.size });
+      } else {
+        resolve({ ok: false, error: (payload && payload.error) || `上传失败（${xhr.status}）` });
+      }
+    };
+    xhr.onerror = () => resolve({ ok: false, error: "网络中断，音频没传上去" });
+    xhr.send(form);
+  });
+}
+
+function readAudioDuration(file) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      const secs = Math.round(audio.duration || 0);
+      URL.revokeObjectURL(url);
+      if (!secs || !isFinite(secs)) return resolve("");
+      resolve(`${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("");
+    };
+    audio.src = url;
+  });
+}
+
 function initSyncIndicator() {
   if (window.location.protocol === "file:") return;
   const last = safeStorageGet(STORAGE_SAVED_AT_KEY);
@@ -2836,12 +2885,16 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
           </label>
           <input class="form-input" id="ed-track-src" value="${escapeHtml(trackObj.src || "")}" placeholder="assets/audio/track-01.mp3 或 https://...">
           <div class="upload-row">
-            <label class="upload-file-label">
-              <span>🎵 选择本地音频文件试听</span>
+            <label class="upload-drop-zone" data-audio-zone>
+              <span class="drop-inner">
+                <span class="drop-badge" aria-hidden="true">🎵</span>
+                <span class="drop-text">上传音频文件<small> · 拖 mp3 进来或点一下选文件</small></span>
+              </span>
               <input type="file" accept="audio/*" id="ed-track-audio-file" style="display:none">
             </label>
             <button class="preset-chip" type="button" id="ed-track-clear-audio">清空音频地址</button>
           </div>
+          <p id="ed-track-audio-status" style="margin:6px 0 0;font-size:11.5px;color:rgba(255,240,250,0.66)">上传后会存到云端并生成永久链接，刷新/换设备/访客都能正常播放</p>
         </div>
         <div class="form-field span-2" style="border-top:1px dashed rgba(255,255,255,0.2);padding-top:12px">
           <label for="ed-track-netease">
@@ -2909,18 +2962,74 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       openEditorModal("stations");
     });
 
-    $("#ed-track-audio-file", bodyEl)?.addEventListener("change", e => {
-      const file = e.target.files?.[0];
+    const handleAudioPicked = async file => {
       if (!file) return;
-      const objUrl = URL.createObjectURL(file);
       const srcInput = $("#ed-track-src", bodyEl);
-      if (srcInput) srcInput.value = objUrl;
-      showToast(`🎵 已加载音频文件「${file.name}」，点击保存即可播放`);
+      const statusEl = $("#ed-track-audio-status", bodyEl);
+      const durationInput = $("#ed-track-duration", bodyEl);
+      const setStatus = text => {
+        if (statusEl) statusEl.textContent = text;
+      };
+
+      if (file.type && !file.type.startsWith("audio/") && !/\.(mp3|ogg|m4a|wav|flac|aac)$/i.test(file.name || "")) {
+        setStatus("⚠ 只能上传音频文件（mp3 / m4a / ogg / wav）");
+        showToast("⚠ 只能上传音频文件");
+        return;
+      }
+
+      const niceSize = file.size > 1024 * 1024
+        ? `${(file.size / 1024 / 1024).toFixed(1)}MB`
+        : `${Math.round(file.size / 1024)}KB`;
+      setStatus(`⏫ 正在上传「${file.name}」(${niceSize})… 0%`);
+
+      const duration = await readAudioDuration(file);
+      const result = await uploadAudioToServer(file, pct => setStatus(`⏫ 正在上传「${file.name}」(${niceSize})… ${pct}%`));
+
+      if (!result.ok) {
+        setStatus(`⚠ ${result.error}`);
+        showToast(`⚠ ${result.error}`);
+        return;
+      }
+      if (srcInput) srcInput.value = result.url;
+      if (durationInput && duration) durationInput.value = duration;
+      setStatus(`✓ 已上传并绑定：${result.url}${duration ? ` · 时长 ${duration}` : ""}`);
+      showToast("✓ 音频已上传到云端，点【保存修改】后就能在唱机里播");
+    };
+
+    $("#ed-track-audio-file", bodyEl)?.addEventListener("change", e => {
+      handleAudioPicked(e.target.files?.[0]);
     });
+
+    const audioZone = $("[data-audio-zone]", bodyEl);
+    if (audioZone) {
+      ["dragenter", "dragover"].forEach(evt => {
+        audioZone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+          audioZone.classList.add("is-dragover");
+        });
+      });
+      ["dragleave", "dragend"].forEach(evt => {
+        audioZone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!audioZone.contains(e.relatedTarget)) audioZone.classList.remove("is-dragover");
+        });
+      });
+      audioZone.addEventListener("drop", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        audioZone.classList.remove("is-dragover");
+        handleAudioPicked(e.dataTransfer?.files?.[0]);
+      });
+    }
 
     $("#ed-track-clear-audio", bodyEl)?.addEventListener("click", () => {
       const srcInput = $("#ed-track-src", bodyEl);
       if (srcInput) srcInput.value = "";
+      const statusEl = $("#ed-track-audio-status", bodyEl);
+      if (statusEl) statusEl.textContent = "已清空音频地址（云端文件仍保留）";
     });
 
     if (!isNew && DATA.tracks.length > 1) {

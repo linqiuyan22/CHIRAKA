@@ -164,6 +164,88 @@ async function handleNetease(url) {
   }
 }
 
+async function handleAudio(path, request, env) {
+  if (!env.AUDIO_BUCKET) {
+    return json({ ok: false, error: "音频存储未配置（缺少 R2 绑定）" }, 503);
+  }
+
+  if (request.method === "GET" || request.method === "HEAD") {
+    const key = decodeURIComponent(path.slice("/api/audio/".length));
+    if (!key) return json({ ok: false, error: "缺少文件 key" }, 400);
+
+    // Range 支持：拖进度条要靠它
+    const range = request.headers.get("range");
+    let object;
+    if (range) {
+      const m = /bytes=(\d*)-(\d*)/.exec(range);
+      if (m) {
+        const start = m[1] ? parseInt(m[1], 10) : undefined;
+        const end = m[2] ? parseInt(m[2], 10) : undefined;
+        object = await env.AUDIO_BUCKET.get(key, {
+          range: start !== undefined && end !== undefined
+            ? { offset: start, length: end - start + 1 }
+            : { suffix: end !== undefined ? end : undefined, offset: start }
+        });
+      }
+    }
+    if (!object) object = await env.AUDIO_BUCKET.get(key);
+    if (!object) return new Response("Not found", { status: 404 });
+
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set("etag", object.httpEtag);
+    headers.set("cache-control", "public, max-age=31536000, immutable");
+    headers.set("accept-ranges", "bytes");
+    headers.set("access-control-allow-origin", "*");
+
+    if (range && object.range) {
+      const off = object.range.offset || 0;
+      const len = object.range.length ?? (object.size - off);
+      headers.set("content-range", `bytes ${off}-${off + len - 1}/${object.size}`);
+      headers.set("content-length", String(len));
+      return new Response(request.method === "HEAD" ? null : object.body, { status: 206, headers });
+    }
+
+    return new Response(request.method === "HEAD" ? null : object.body, { headers });
+  }
+
+  if (request.method === "POST") {
+    const gate = await checkPass(request.headers.get("x-chiraka-pass") || "", env);
+    if (!gate.ok) return json({ ok: false, error: gate.reason }, 401);
+
+    const contentType = request.headers.get("content-type") || "";
+    let bytes;
+    let filename = "audio.mp3";
+    let type = "audio/mpeg";
+
+    if (contentType.includes("multipart/form-data")) {
+      const form = await request.formData();
+      const file = form.get("file");
+      if (!file || typeof file === "string") return json({ ok: false, error: "没有收到音频文件" }, 400);
+      filename = file.name || filename;
+      type = file.type || type;
+      bytes = await file.arrayBuffer();
+    } else {
+      filename = request.headers.get("x-filename") || filename;
+      type = contentType || type;
+      bytes = await request.arrayBuffer();
+    }
+
+    if (!bytes || bytes.byteLength === 0) return json({ ok: false, error: "文件是空的" }, 400);
+    if (bytes.byteLength > 60 * 1024 * 1024) return json({ ok: false, error: "单个音频请控制在 60MB 以内" }, 413);
+
+    const safeName = filename.replace(/[^\w.\-\u4e00-\u9fa5]+/g, "_").slice(-60);
+    const key = `audio/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+    await env.AUDIO_BUCKET.put(key, bytes, {
+      httpMetadata: { contentType: type, cacheControl: "public, max-age=31536000, immutable" }
+    });
+
+    return json({ ok: true, url: `/api/audio/${key}`, key, size: bytes.byteLength });
+  }
+
+  return json({ ok: false, error: "method not allowed" }, 405);
+}
+
 const REVALIDATE_TYPES = [
   "text/html",
   "text/css",
@@ -178,6 +260,7 @@ export default {
 
     if (path === "/api" || path.startsWith("/api/")) {
       if (path === "/api/netease") return handleNetease(url);
+      if (path === "/api/audio" || path.startsWith("/api/audio/")) return handleAudio(path, request, env);
       return handleApi(path, request, env);
     }
 
