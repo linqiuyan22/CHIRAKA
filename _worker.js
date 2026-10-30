@@ -1,26 +1,26 @@
 /**
- * CHIRAKA 内容接口（Cloudflare Pages Functions · 目录模式）
- * 路由：/api/*
+ * CHIRAKA · Cloudflare Pages 高级模式 Worker
  *
  *   GET  /api/content   读出站点数据快照
  *   POST /api/content   写入（需 x-chiraka-pass 头）
  *   POST /api/login     校验管理员口令
  *   POST /api/passcode  修改口令（需旧口令）
  *
- * 页面与静态资源由 Pages 直接托管，不经过这里，所以 _headers 规则能正常生效。
+ * 其余请求交给静态资源；页面 / 脚本 / 样式在这里改成 must-revalidate，
+ * 这样单主改完内容或我更新版本后，访客刷新就能拿到新的（Pages 默认给
+ * js/css 挂 max-age=14400，四小时内都可能读到旧文件）。
  */
 
 const CONTENT_KEY = "content.json";
 const PASS_KEY = "passcode";
 
+const JSON_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+  "cache-control": "no-store"
+};
+
 const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store"
-    }
-  });
+  new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
 
 function safeEqual(a, b) {
   const x = String(a ?? "");
@@ -51,23 +51,15 @@ async function bodyJson(request) {
   }
 }
 
-export async function onRequest({ request, env, params }) {
-  const route = (params.path || []).join("/");
-  const method = request.method.toUpperCase();
-
-  if (route === "content") {
-    if (method === "GET") {
+async function handleApi(path, request, env) {
+  if (path === "/api/content") {
+    if (request.method === "GET") {
       const raw = await env.CHIRAKA_CONTENT.get(CONTENT_KEY);
       if (!raw) return json({ ok: false, empty: true }, 404);
-      return new Response(raw, {
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          "cache-control": "no-store"
-        }
-      });
+      return new Response(raw, { headers: JSON_HEADERS });
     }
 
-    if (method === "POST") {
+    if (request.method === "POST") {
       const gate = await checkPass(request.headers.get("x-chiraka-pass") || "", env);
       if (!gate.ok) return json({ ok: false, error: gate.reason }, 401);
 
@@ -84,14 +76,14 @@ export async function onRequest({ request, env, params }) {
     return json({ ok: false, error: "method not allowed" }, 405);
   }
 
-  if (route === "login" && method === "POST") {
+  if (path === "/api/login" && request.method === "POST") {
     const body = await bodyJson(request);
     const gate = await checkPass(body?.passcode ?? "", env);
     if (!gate.ok) return json({ ok: false, error: gate.reason }, 401);
     return json({ ok: true });
   }
 
-  if (route === "passcode" && method === "POST") {
+  if (path === "/api/passcode" && request.method === "POST") {
     const body = await bodyJson(request);
     const oldPass = String(body?.oldPass ?? "");
     const newPass = String(body?.newPass ?? "").trim();
@@ -106,3 +98,36 @@ export async function onRequest({ request, env, params }) {
 
   return json({ ok: false, error: "not found" }, 404);
 }
+
+const REVALIDATE_TYPES = [
+  "text/html",
+  "text/css",
+  "application/javascript",
+  "text/javascript"
+];
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+
+    if (path === "/api" || path.startsWith("/api/")) {
+      return handleApi(path, request, env);
+    }
+
+    const res = await env.ASSETS.fetch(request);
+    const type = res.headers.get("content-type") || "";
+
+    if (path.startsWith("/assets/fonts/") || path.startsWith("/assets/bg/")) {
+      return res;
+    }
+
+    if (REVALIDATE_TYPES.some(t => type.includes(t))) {
+      const headers = new Headers(res.headers);
+      headers.set("cache-control", "public, max-age=0, must-revalidate");
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+    }
+
+    return res;
+  }
+};
