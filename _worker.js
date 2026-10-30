@@ -177,8 +177,9 @@ async function handleAudio(path, request, env) {
   if (!kv) return json({ ok: false, error: "存储未配置" }, 503);
 
   if (request.method === "GET" || request.method === "HEAD") {
-    const key = decodeURIComponent(path.slice("/api/audio/".length));
-    if (!key) return json({ ok: false, error: "缺少文件 key" }, 400);
+    const rawKey = decodeURIComponent(path.slice("/api/audio/".length));
+    if (!rawKey) return json({ ok: false, error: "缺少文件 key" }, 400);
+    const key = rawKey.startsWith(AUDIO_PREFIX) ? rawKey : AUDIO_PREFIX + rawKey;
 
     const got = await kv.getWithMetadata(key, "arrayBuffer");
     if (!got || !got.value) return new Response("Not found", { status: 404 });
@@ -262,7 +263,7 @@ async function handleAudio(path, request, env) {
       metadata: { contentType: type, size: bytes.byteLength, filename: safeName, uploadedAt: new Date().toISOString() }
     });
 
-    return json({ ok: true, url: `/api/audio/${key}`, key, size: bytes.byteLength });
+    return json({ ok: true, url: `/api/audio/${encodeURIComponent(key.slice(AUDIO_PREFIX.length))}`, key, size: bytes.byteLength });
   }
 
   return json({ ok: false, error: "method not allowed" }, 405);
