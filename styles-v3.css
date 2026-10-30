@@ -2353,12 +2353,26 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   display: block;
 }
 
-/* 画廊：格子高度跟着图片本身走，原图按原比例铺开 */
+/* 画廊：改成瀑布流（多列），每格高度跟着自己图片走，不留空洞 */
 .gallery-grid {
+  display: block;
+  columns: 320px;
+  column-gap: 16px;
   grid-auto-rows: auto;
-  align-items: start;
 }
-.gallery-tile.span-tall { grid-row: auto; }
+.gallery-tile {
+  display: flex;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0 0 16px;
+  width: 100%;
+}
+.gallery-tile.span-wide,
+.gallery-tile.span-tall {
+  grid-column: auto;
+  grid-row: auto;
+}
+.gallery-tile:hover { transform: translate(-2px, -2px); }
 .gallery-tile .tile-art { flex: 0 0 auto; }
 
 .tile-art .art-img {
