@@ -164,49 +164,69 @@ async function handleNetease(url) {
   }
 }
 
+/**
+ * 音频托管：直接复用已绑定的 KV（CHIRAKA_CONTENT），不额外开存储服务。
+ *   POST /api/audio   上传（需 x-chiraka-pass）
+ *   GET  /api/audio/<key>  播放，自己按 Range 切片，所以能拖进度条
+ */
+const AUDIO_PREFIX = "audio/";
+const AUDIO_MAX_BYTES = 20 * 1024 * 1024;
+
 async function handleAudio(path, request, env) {
-  if (!env.AUDIO_BUCKET) {
-    return json({ ok: false, error: "音频存储未配置（缺少 R2 绑定）" }, 503);
-  }
+  const kv = env.CHIRAKA_CONTENT;
+  if (!kv) return json({ ok: false, error: "存储未配置" }, 503);
 
   if (request.method === "GET" || request.method === "HEAD") {
     const key = decodeURIComponent(path.slice("/api/audio/".length));
     if (!key) return json({ ok: false, error: "缺少文件 key" }, 400);
 
-    // Range 支持：拖进度条要靠它
+    const got = await kv.getWithMetadata(key, "arrayBuffer");
+    if (!got || !got.value) return new Response("Not found", { status: 404 });
+
+    const buf = got.value;
+    const total = buf.byteLength;
+    const meta = got.metadata || {};
+    const type = meta.contentType || "audio/mpeg";
+    const baseHeaders = {
+      "content-type": type,
+      "cache-control": "public, max-age=31536000, immutable",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*"
+    };
+
     const range = request.headers.get("range");
-    let object;
-    if (range) {
-      const m = /bytes=(\d*)-(\d*)/.exec(range);
-      if (m) {
-        const start = m[1] ? parseInt(m[1], 10) : undefined;
-        const end = m[2] ? parseInt(m[2], 10) : undefined;
-        object = await env.AUDIO_BUCKET.get(key, {
-          range: start !== undefined && end !== undefined
-            ? { offset: start, length: end - start + 1 }
-            : { suffix: end !== undefined ? end : undefined, offset: start }
+    const m = range ? /bytes=(\d*)-(\d*)/.exec(range) : null;
+    if (m && (m[1] || m[2])) {
+      let start;
+      let end;
+      if (m[1]) {
+        start = parseInt(m[1], 10);
+        end = m[2] ? Math.min(parseInt(m[2], 10), total - 1) : total - 1;
+      } else {
+        const suffix = parseInt(m[2], 10);
+        start = Math.max(total - suffix, 0);
+        end = total - 1;
+      }
+      if (start > end || start >= total) {
+        return new Response(null, {
+          status: 416,
+          headers: { ...baseHeaders, "content-range": `bytes */${total}` }
         });
       }
-    }
-    if (!object) object = await env.AUDIO_BUCKET.get(key);
-    if (!object) return new Response("Not found", { status: 404 });
-
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set("etag", object.httpEtag);
-    headers.set("cache-control", "public, max-age=31536000, immutable");
-    headers.set("accept-ranges", "bytes");
-    headers.set("access-control-allow-origin", "*");
-
-    if (range && object.range) {
-      const off = object.range.offset || 0;
-      const len = object.range.length ?? (object.size - off);
-      headers.set("content-range", `bytes ${off}-${off + len - 1}/${object.size}`);
-      headers.set("content-length", String(len));
-      return new Response(request.method === "HEAD" ? null : object.body, { status: 206, headers });
+      const chunk = buf.slice(start, end + 1);
+      return new Response(request.method === "HEAD" ? null : chunk, {
+        status: 206,
+        headers: {
+          ...baseHeaders,
+          "content-range": `bytes ${start}-${end}/${total}`,
+          "content-length": String(chunk.byteLength)
+        }
+      });
     }
 
-    return new Response(request.method === "HEAD" ? null : object.body, { headers });
+    return new Response(request.method === "HEAD" ? null : buf, {
+      headers: { ...baseHeaders, "content-length": String(total) }
+    });
   }
 
   if (request.method === "POST") {
@@ -232,12 +252,14 @@ async function handleAudio(path, request, env) {
     }
 
     if (!bytes || bytes.byteLength === 0) return json({ ok: false, error: "文件是空的" }, 400);
-    if (bytes.byteLength > 60 * 1024 * 1024) return json({ ok: false, error: "单个音频请控制在 60MB 以内" }, 413);
+    if (bytes.byteLength > AUDIO_MAX_BYTES) {
+      return json({ ok: false, error: "单个音频请控制在 20MB 以内（约 20 分钟 mp3）" }, 413);
+    }
 
-    const safeName = filename.replace(/[^\w.\-\u4e00-\u9fa5]+/g, "_").slice(-60);
-    const key = `audio/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
-    await env.AUDIO_BUCKET.put(key, bytes, {
-      httpMetadata: { contentType: type, cacheControl: "public, max-age=31536000, immutable" }
+    const safeName = filename.replace(/[^\w.\-\u4e00-\u9fa5]+/g, "_").slice(-48);
+    const key = `${AUDIO_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+    await kv.put(key, bytes, {
+      metadata: { contentType: type, size: bytes.byteLength, filename: safeName, uploadedAt: new Date().toISOString() }
     });
 
     return json({ ok: true, url: `/api/audio/${key}`, key, size: bytes.byteLength });
