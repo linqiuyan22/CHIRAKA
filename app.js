@@ -575,61 +575,106 @@ const DEFAULT_ENTER_TEXTS = {
   "04": "接入午夜电台 // TUNE IN"
 };
 
+/* 调查板上两张剪报改成「实时内容」，不再重复第二遍板块入口 */
+function renderBoardClippings() {
+  const newsEl = $("#board-clip-news");
+  if (newsEl) {
+    const list = Array.isArray(DATA.news) ? DATA.news : [];
+    const deskList = list.filter(n => !isForumPost(n));
+    const lead = deskList[0] || list[0];
+    const title = lead && !isPendingValue(lead.title) ? newsTruncate(lead.title, 22) : "";
+    newsEl.textContent = title
+      ? `头版 · ${title}`
+      : `WEST COAST CASE FILE · ${deskList.length || list.length} 条动态在档`;
+  }
+
+  const radioEl = $("#board-clip-radio");
+  if (radioEl) {
+    const tracks = Array.isArray(DATA.tracks) ? DATA.tracks : [];
+    const first = tracks[0];
+    const now = first && !isPendingValue(first.title)
+      ? newsTruncate(`${first.title}${first.artist ? " / " + first.artist : ""}`, 22)
+      : "";
+    radioEl.textContent = now ? `正在播放 · ${now}` : `VICE UNITY · ${tracks.length || 4} 首在档`;
+  }
+}
+
+let drawerSwitchToken = 0;
+
 function selectHomeDrawer(index, instant = false) {
   const folders = getArchiveFolders();
   const folder = folders[index] || folders[0];
   if (!folder) return;
   currentHomeDrawer = index;
 
-  const sheet = $("#file-sheet");
+  const body = $(".sheet-body");
   const panel = $("#drawer-case");
-  const clueBtns = $$("[data-mini-drawer]");
 
-  clueBtns.forEach(btn => {
+  $$("[data-mini-drawer]").forEach(btn => {
     btn.classList.toggle("is-active", Number(btn.dataset.miniDrawer) === index);
   });
 
-  if (panel) panel.dataset.theme = folder.theme;
-  if (sheet) {
-    sheet.classList.remove("is-sliding");
-    if (slideTimeout) window.clearTimeout(slideTimeout);
-    if (!instant && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      void sheet.offsetWidth;
-      sheet.classList.add("is-sliding");
-      slideTimeout = window.setTimeout(() => sheet.classList.remove("is-sliding"), 380);
+  const token = ++drawerSwitchToken;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const apply = () => {
+    if (panel) panel.dataset.theme = folder.theme;
+
+    if ($("#file-num")) $("#file-num").textContent = folder.index;
+    if ($("#file-heading")) $("#file-heading").textContent = folder.label;
+    if ($("#file-english")) $("#file-english").textContent = folder.english;
+    if ($("#file-description")) $("#file-description").textContent = folder.desc;
+    if ($("#file-kicker")) $("#file-kicker").textContent = folder.kicker;
+    if ($("#file-signature")) $("#file-signature").textContent = folder.signature;
+    if ($("#file-counter")) $("#file-counter").textContent = `DOSSIER · ${folder.index} / 04`;
+    if ($("#file-photo-label")) $("#file-photo-label").textContent = folder.photoLabel;
+
+    const photoImg = $("#file-photo-img");
+    if (photoImg && folder.photo) {
+      const src = resolveImg(folder.photo);
+      if (photoImg.getAttribute("src") !== src) {
+        // 先加载再换图，避免切卷宗时闪一下白块
+        const preload = new Image();
+        preload.onload = () => {
+          if (instant || token === drawerSwitchToken) photoImg.src = src;
+        };
+        preload.src = src;
+        if (preload.complete) photoImg.src = src;
+      }
     }
-  }
 
-  if ($("#file-num")) $("#file-num").textContent = folder.index;
-  if ($("#file-heading")) $("#file-heading").textContent = folder.label;
-  if ($("#file-english")) $("#file-english").textContent = folder.english;
-  if ($("#file-description")) $("#file-description").textContent = folder.desc;
-  if ($("#file-kicker")) $("#file-kicker").textContent = folder.kicker;
-  if ($("#file-signature")) $("#file-signature").textContent = folder.signature;
-  if ($("#file-counter")) $("#file-counter").textContent = `DOSSIER · ${folder.index} / 04`;
-  if ($("#file-photo-label")) $("#file-photo-label").textContent = folder.photoLabel;
-
-  const photoImg = $("#file-photo-img");
-  if (photoImg && folder.photo) {
-    photoImg.src = resolveImg(folder.photo);
-  }
-
-  const pillsHost = $("#file-pills");
-  if (pillsHost) {
-    pillsHost.innerHTML = (folder.pills || []).map(p => `<span class="sheet-pill">${escapeHtml(p)}</span>`).join("");
-  }
-
-  const enterBtn = $("#file-enter");
-  if (enterBtn) {
-    const btnLabel = folder.enterText || DEFAULT_ENTER_TEXTS[folder.index] || `进入${folder.label} // OPEN`;
-    enterBtn.innerHTML = `${escapeHtml(btnLabel)} <span aria-hidden="true">${icon("external")}</span>`;
-    if (window.CHIRAKA_SPA_MODE) {
-      enterBtn.setAttribute("href", `#${folder.view}`);
-      enterBtn.dataset.spaTarget = folder.view;
-    } else {
-      enterBtn.setAttribute("href", folder.url);
+    const pillsHost = $("#file-pills");
+    if (pillsHost) {
+      pillsHost.innerHTML = (folder.pills || []).map(p => `<span class="sheet-pill">${escapeHtml(p)}</span>`).join("");
     }
+
+    const enterBtn = $("#file-enter");
+    if (enterBtn) {
+      const btnLabel = folder.enterText || DEFAULT_ENTER_TEXTS[folder.index] || `进入${folder.label} // OPEN`;
+      enterBtn.innerHTML = `${escapeHtml(btnLabel)} <span aria-hidden="true">${icon("external")}</span>`;
+      if (window.CHIRAKA_SPA_MODE) {
+        enterBtn.setAttribute("href", `#${folder.view}`);
+        enterBtn.dataset.spaTarget = folder.view;
+      } else {
+        enterBtn.setAttribute("href", folder.url);
+      }
+    }
+  };
+
+  if (instant || reduced || !body) {
+    apply();
+    return;
   }
+
+  body.classList.add("is-fading");
+  if (slideTimeout) window.clearTimeout(slideTimeout);
+  slideTimeout = window.setTimeout(() => {
+    if (token !== drawerSwitchToken) return;
+    apply();
+    body.classList.remove("is-fading");
+    body.classList.add("is-entering");
+    window.setTimeout(() => body.classList.remove("is-entering"), 260);
+  }, 130);
 }
 
 /* ---------- 首页档案自动轮播 ---------- */
@@ -698,6 +743,7 @@ function initHomeCarousel() {
 
 function initHome() {
   renderHomeHero();
+  renderBoardClippings();
   selectHomeDrawer(currentHomeDrawer, true);
   $$("[data-mini-drawer]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -1723,23 +1769,58 @@ function cityDeskBrief(item, index) {
 }
 
 /* ---------- Night BBS：帖子列表行 ---------- */
-function bbsThreadRow(item) {
+function newsTruncate(text, max) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  if (!value) return "";
+  return value.length > max ? `${value.slice(0, max)}…` : value;
+}
+
+/* 身份铭牌去掉与栏目标题重复的前缀，避免每行都念一遍 NIGHT BBS */
+function newsRoleLabel(role) {
+  const raw = String(role || "").trim();
+  if (!raw) return "匿名市民";
+  const cleaned = raw
+    .replace(/^(night\s*bbs|n?ightbbs)\s*[·/／|-]?\s*/i, "")
+    .replace(/^街头匿名论坛\s*[·/／|-]?\s*/, "")
+    .trim();
+  return cleaned || "匿名市民";
+}
+
+function newsHotThreadId() {
+  const forums = (DATA.news || []).filter(isForumPost);
+  const best = forums.reduce((pick, it) => ((it.likes || 0) > (pick.likes ?? -1) ? it : pick), { id: "", likes: -1 });
+  return (best.likes || 0) >= 20 ? best.id : "";
+}
+
+function newsLastReply(item) {
+  if (!Array.isArray(item.comments) || !item.comments.length) return null;
+  const last = item.comments[item.comments.length - 1];
+  return {
+    author: last.author || "匿名市民",
+    content: newsTruncate(last.content, 34)
+  };
+}
+
+function bbsThreadRow(item, isHot = false) {
+  const last = newsLastReply(item);
   return `
     <a class="bbs-thread" href="${newsHref(item)}" data-news-id="${escapeHtml(item.id)}">
       <span class="bbs-avatar">${escapeHtml(newsInitial(item.author))}</span>
       <span class="bbs-thread-main">
         <span class="bbs-thread-head">
           <span class="bbs-handle">@${escapeHtml(item.author || "匿名市民")}</span>
-          <span class="tag-line tag-line--ident">${escapeHtml(item.authorRole || "匿名市民")}</span>
+          <span class="tag-line tag-line--ident">${escapeHtml(newsRoleLabel(item.authorRole))}</span>
           <span class="tag-line tag-line--thread">#${newsThreadCode(item.id)}</span>
+          ${isHot ? `<span class="tag-line tag-line--hot">${icon("flame")}HOT</span>` : ""}
           <span class="bbs-time">${escapeHtml(item.date)}</span>
         </span>
         <h3 class="bbs-thread-title">${wrapPendingHtml(item.title)}</h3>
         <p class="bbs-thread-excerpt">${wrapPendingHtml(item.summary)}</p>
+        ${last ? `<span class="bbs-last-reply">${icon("reply")}<b>${escapeHtml(last.author)}</b>：${escapeHtml(last.content)}</span>` : ""}
         <span class="bbs-thread-foot">
           <span class="tag-line tag-line--board">/ ${escapeHtml(item.category || "街头论坛")}</span>
           <span class="bbs-stat">${icon("eye")} ${newsCount(item.views)}</span>
-          <span class="bbs-stat">${icon("heart")} ${item.likes || 0}</span>
+          <span class="bbs-stat bbs-stat--like" role="button" tabindex="0" data-like-thread="${escapeHtml(item.id)}" title="直接点赞这条帖子">${icon("heart")} <b data-like-count="${escapeHtml(item.id)}">${item.likes || 0}</b></span>
           <span class="bbs-stat">${icon("comment")} ${newsReplyCount(item)}</span>
           ${renderRelatedCharacterPills(item.relatedCharacters)}
           <span class="admin-edit-chip" role="button" tabindex="0" data-edit-news="${escapeHtml(item.id)}">${icon("edit")}<span>编辑</span></span>
@@ -1754,6 +1835,7 @@ let currentNewsFilter = "全部";
 function renderNewsSection() {
   const deskHost = $("#city-desk-block");
   const bbsHost = $("#night-bbs-block");
+  const stage = $(".news-stage");
   if (!deskHost || !bbsHost) return;
 
   const customCats = [...new Set(DATA.news.map(item => item.category))];
@@ -1791,6 +1873,7 @@ function renderNewsSection() {
 
   const deskItems = items.filter(i => !isForumPost(i));
   const forumItems = items.filter(i => isForumPost(i));
+  const hotId = newsHotThreadId();
 
   if (deskItems.length) {
     const [lead, ...briefs] = deskItems;
@@ -1798,7 +1881,7 @@ function renderNewsSection() {
     deskHost.innerHTML = `
       <header class="news-block-head">
         <span class="news-block-tag">CITY DESK</span>
-        <h3 class="news-block-title">城市新闻 · 官方报道</h3>
+        <h3 class="news-block-title">官方头版报道</h3>
         <span class="news-block-count">${deskItems.length} 条报道</span>
       </header>
       ${cityDeskLead(lead)}
@@ -1817,7 +1900,9 @@ function renderNewsSection() {
         <h3 class="news-block-title">街头匿名论坛</h3>
         <span class="news-block-count">匿名节点 · ${forumItems.length} 帖在架</span>
       </header>
-      <div class="bbs-thread-list">${forumItems.map(bbsThreadRow).join("")}</div>
+      <div class="bbs-thread-list">
+        ${forumItems.map(it => bbsThreadRow(it, it.id === hotId)).join("")}
+      </div>
     `;
   } else {
     bbsHost.hidden = true;
@@ -1827,6 +1912,13 @@ function renderNewsSection() {
   if (!deskItems.length && !forumItems.length) {
     deskHost.hidden = false;
     deskHost.innerHTML = `<div class="empty-state">当前板块暂无帖子</div>`;
+  }
+
+  // 切换板块时轻微淡入，避免内容硬跳
+  if (stage && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    stage.classList.remove("is-refreshing");
+    void stage.offsetWidth;
+    stage.classList.add("is-refreshing");
   }
 
   wireNewsCardEvents();
@@ -1849,6 +1941,21 @@ function wireNewsCardEvents() {
     });
   });
 
+  // 列表内直接点赞，不跳转详情
+  $$("[data-like-thread]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = DATA.news.find(n => n.id === btn.dataset.likeThread);
+      if (!target) return;
+      target.likes = (target.likes || 0) + 1;
+      const counter = $(`[data-like-count="${btn.dataset.likeThread}"]`);
+      if (counter) counter.textContent = String(target.likes);
+      btn.classList.add("is-liked");
+      saveSiteData("已点赞该帖");
+    });
+  });
+
   $$("[data-jump-char]").forEach(pill => {
     pill.addEventListener("click", e => {
       e.preventDefault();
@@ -1860,7 +1967,7 @@ function wireNewsCardEvents() {
   if (window.CHIRAKA_SPA_MODE) {
     $$("[data-news-id]").forEach(el => {
       el.addEventListener("click", e => {
-        if (e.target.closest("[data-edit-news], [data-edit-news-cover], [data-jump-char]")) return;
+        if (e.target.closest("[data-edit-news], [data-edit-news-cover], [data-jump-char], [data-like-thread]")) return;
         e.preventDefault();
         openSpaArticle(el.dataset.newsId);
       });
@@ -1897,6 +2004,7 @@ function deskLetterList(item) {
           ${linkedChar ? `<span class="char-link-pill" role="button" tabindex="0" data-jump-char="${escapeHtml(linkedChar.id)}">${icon("link")}${escapeHtml(linkedChar.label)}</span>` : ""}
           <span>${escapeHtml(c.time || "刚刚")}</span>
           <span class="desk-letter-actions">
+            <button class="desk-mini-btn" type="button" data-quote-floor="${escapeHtml(c.author || "匿名市民")}">${icon("reply")} 回复</button>
             <button class="desk-mini-btn" type="button" data-like-comment="${idx}">${icon("heart")} ${c.likes || 0}</button>
             <button class="desk-mini-btn" type="button" data-delete-comment="${idx}">${icon("trash")} 删除</button>
           </span>
@@ -1924,8 +2032,9 @@ function bbsFloorList(item) {
             <span>${escapeHtml(c.time || "刚刚")}</span>
           </span>
           <span class="bbs-floor-actions">
-            <button class="desk-mini-btn" type="button" data-like-comment="${idx}">${icon("heart")} ${c.likes || 0}</button>
-            <button class="desk-mini-btn" type="button" data-delete-comment="${idx}">${icon("trash")} 删除</button>
+            <button class="bbs-mini-btn" type="button" data-quote-floor="${escapeHtml(c.author || "匿名市民")}">${icon("reply")} 回复</button>
+            <button class="bbs-mini-btn" type="button" data-like-comment="${idx}">${icon("heart")} ${c.likes || 0}</button>
+            <button class="bbs-mini-btn" type="button" data-delete-comment="${idx}">${icon("trash")} 删除</button>
           </span>
         </div>
         <p>${escapeHtml(c.content)}</p>
@@ -1980,7 +2089,7 @@ function relatedBlock(item, related) {
         <h3 class="news-block-title">${isForum ? "其他街头热帖" : "其他城市剪报"}</h3>
       </header>
       <div class="${isForum ? "bbs-thread-list" : "desk-brief-list"}">
-        ${related.map(isForum ? bbsThreadRow : cityDeskBrief).join("")}
+        ${related.map((it, i) => (isForum ? bbsThreadRow(it) : cityDeskBrief(it, i))).join("")}
       </div>
     </section>
   `;
@@ -2053,7 +2162,7 @@ function bbsThreadView(item, related) {
         <div>
           <div class="bbs-thread-card-meta">
             <span class="bbs-handle">@${escapeHtml(item.author || "匿名市民")}</span>
-            <span class="tag-line tag-line--ident">${escapeHtml(item.authorRole || "匿名市民")}</span>
+            <span class="tag-line tag-line--ident">${escapeHtml(newsRoleLabel(item.authorRole))}</span>
             <span class="tag-line tag-line--thread">#${newsThreadCode(item.id)}</span>
             <span class="tag-line tag-line--board">/ ${escapeHtml(item.category || "街头论坛")}</span>
             <span class="bbs-time">${escapeHtml(item.date)}</span>
@@ -2163,6 +2272,18 @@ function renderArticleById(id) {
       content
     });
     saveSiteData("回帖成功，已盖上新楼层");
+  });
+
+  $$("[data-quote-floor]", host).forEach(btn => {
+    btn.addEventListener("click", () => {
+      const textarea = $("#reply-content-input", host);
+      if (!textarea) return;
+      const prefix = `@${btn.dataset.quoteFloor} `;
+      const body = textarea.value.replace(/^@\S+\s*/, "");
+      textarea.value = prefix + body;
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    });
   });
 
   $$("[data-edit-article]", host).forEach(el => {
@@ -2377,6 +2498,7 @@ function openGalleryItem(id) {
 /* ---------- 全局视图刷新 ---------- */
 function refreshAllViews() {
   renderHomeHero();
+  renderBoardClippings();
   selectHomeDrawer(currentHomeDrawer, true);
   renderCharactersGrid();
   renderCharacterDetailById(currentCharacterId);

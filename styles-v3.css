@@ -372,14 +372,6 @@ body.page-home {
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
   z-index: 6;
 }
-.file-sheet.is-sliding {
-  animation: pullfileHard 0.36s cubic-bezier(0.16, 0.84, 0.26, 1);
-}
-@keyframes pullfileHard {
-  0% { opacity: 0.72; transform: rotate(0.5deg) translateY(10px) scale(0.985); }
-  100% { opacity: 1; transform: rotate(-1.1deg) translateY(0) scale(1); }
-}
-
 .sheet-upper,
 .sheet-footer {
   position: relative;
@@ -2505,4 +2497,73 @@ label .icon + span,
 .rpm-pill,
 .rank-badge {
   font-variant-emoji: text;
+}
+
+/* ==========================================================================
+   首页调查板：卷宗内容淡入淡出，替代原先整张卡片抖动
+   ========================================================================== */
+.sheet-body {
+  transition: opacity 0.14s ease, transform 0.16s ease;
+  will-change: opacity, transform;
+}
+.sheet-body.is-fading {
+  opacity: 0;
+  transform: translateY(5px);
+}
+.sheet-body.is-entering {
+  animation: sheetBodyIn 0.24s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+@keyframes sheetBodyIn {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 主题色切换时让描边 / 投影跟着过渡，不要瞬间跳色 */
+.file-sheet,
+.sheet-pill,
+.sheet-enter,
+.board-clue-btn {
+  transition:
+    background-color 0.26s ease,
+    border-color 0.26s ease,
+    color 0.26s ease,
+    box-shadow 0.26s ease,
+    transform 0.26s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-body,
+  .file-sheet,
+  .sheet-pill,
+  .sheet-enter,
+  .board-clue-btn {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   头部工具区：中等宽度下让出空间，消除整站横向溢出
+   ========================================================================== */
+@media (max-width: 1200px) {
+  .site-header { gap: 10px; }
+  .header-tools {
+    flex-shrink: 1;
+    min-width: 0;
+    gap: 8px;
+  }
+  .header-radio { padding: 0 11px; }
+  .header-radio .eq { display: none; }
+  .header-auth-btn span {
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1080px) {
+  .header-radio { display: none; }
+  .header-auth-btn { padding: 0 10px; }
+  .header-auth-btn span { max-width: 72px; }
 }

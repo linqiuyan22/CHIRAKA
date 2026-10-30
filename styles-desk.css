@@ -35,6 +35,7 @@
 }
 .news-block-tag {
   font: 800 10px/1 var(--body);
+  white-space: nowrap;
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--bbs-magenta);
@@ -56,6 +57,16 @@
 }
 
 .news-stage { display: flex; flex-direction: column; gap: 34px; }
+.news-stage.is-refreshing {
+  animation: stageIn 0.22s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+@keyframes stageIn {
+  from { opacity: 0.35; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .news-stage.is-refreshing { animation: none; }
+}
 .news-stage > [hidden] { display: none; }
 
 /* Night BBS 用一层极暗的终端窗口，和纸面 City Desk 拉开距离 */
@@ -82,6 +93,12 @@
 .tag-line--board { color: var(--bbs-orange); }
 .tag-line--ident { color: rgba(255, 160, 110, 0.86); border-color: rgba(255, 138, 73, 0.45); }
 .tag-line--thread { color: var(--bbs-faint); border-color: rgba(240, 226, 255, 0.18); }
+.tag-line--hot {
+  color: var(--bbs-magenta);
+  border-color: rgba(255, 77, 141, 0.5);
+  gap: 3px;
+}
+.tag-line--hot .icon { width: 9px; height: 9px; }
 .tag-line--desk { color: var(--desk-accent); }
 
 /* ---------- City Desk：头版剪报 ---------- */
@@ -383,6 +400,40 @@
   align-items: center;
   gap: 5px;
 }
+.bbs-stat--like {
+  cursor: pointer;
+  padding: 2px 7px;
+  margin: -2px 0;
+  border: 1px solid transparent;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.bbs-stat--like:hover,
+.bbs-stat--like:focus-visible {
+  border-color: rgba(255, 77, 141, 0.5);
+  color: #ffa8c6;
+}
+.bbs-stat--like b { font-weight: 700; }
+.bbs-stat--like.is-liked {
+  color: var(--bbs-magenta);
+  border-color: rgba(255, 77, 141, 0.6);
+}
+
+.bbs-last-reply {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.028);
+  border-left: 2px solid rgba(106, 214, 238, 0.35);
+  font: 400 11.5px/1.55 var(--cn);
+  color: rgba(228, 214, 245, 0.66);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bbs-last-reply b { font-weight: 700; color: rgba(246, 238, 255, 0.86); }
+.bbs-last-reply .icon { width: 10px; height: 10px; flex: none; opacity: 0.7; }
 
 /* ---------- 角色联动 pill（两种语境共用一个组件） ---------- */
 .char-link-pill {
@@ -565,6 +616,27 @@
   transition: border-color 0.16s ease, color 0.16s ease;
 }
 .desk-mini-btn:hover { border-color: var(--desk-accent); color: var(--desk-accent); }
+
+/* 深色语境下的小按钮（纸面版见 .desk-mini-btn） */
+.bbs-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid rgba(240, 226, 255, 0.2);
+  background: transparent;
+  color: rgba(240, 226, 255, 0.62);
+  font: 700 10px/1.5 var(--body);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.bbs-mini-btn .icon { width: 10px; height: 10px; }
+.bbs-mini-btn:hover,
+.bbs-mini-btn:focus-visible {
+  border-color: rgba(106, 214, 238, 0.55);
+  color: var(--bbs-cyan);
+}
 
 /* ==========================================================================
    Night BBS：帖子详情（楼层）
@@ -780,6 +852,8 @@
   .cdm-brief-side { display: none; }
   .bbs-thread { grid-template-columns: 38px minmax(0, 1fr); padding: 14px 10px; }
   .bbs-avatar { width: 38px; height: 38px; font-size: 14px; }
+  .bbs-last-reply { font-size: 11px; }
+  .bbs-thread-foot { gap: 10px; }
   .bbs-thread-card { grid-template-columns: 46px minmax(0, 1fr); padding: 14px; }
   .bbs-thread-card .bbs-avatar { width: 46px; height: 46px; font-size: 17px; }
   .bbs-thread-card h1 { font-size: 21px; }
