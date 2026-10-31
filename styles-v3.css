@@ -2511,15 +2511,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   font: 600 11.5px/1.4 var(--cn);
   color: rgba(255, 240, 250, 0.66);
 }
-.batch-queue-hint {
-  grid-column: 1 / -1;
-  margin-bottom: 2px;
-  padding: 9px 13px;
-  border-left: 3px solid var(--mint);
-  background: rgba(56, 242, 184, 0.1);
-  font: 600 12px/1.5 var(--cn);
-  color: #d6fff1;
-}
 
 @media (max-width: 700px) {
   .batch-drop-zone { min-height: 140px; padding: 18px 12px; }

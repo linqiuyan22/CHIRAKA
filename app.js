@@ -278,6 +278,12 @@ function setSyncStatus(state, iso, message) {
     el.setAttribute("aria-live", "polite");
     document.body.appendChild(el);
     syncStatusState.el = el;
+    // 弹窗关闭时把提示挪回常驻层，避免它跟着隐藏的弹窗一起消失
+    document.addEventListener("close", event => {
+      if (event.target && event.target.contains && event.target.contains(el)) {
+        document.body.appendChild(el);
+      }
+    }, true);
   }
   const el = syncStatusState.el;
   const time = iso === undefined ? "" : formatSavedAt(iso);
@@ -2819,7 +2825,7 @@ function applyGalleryFormFields(galObj) {
 /* ---------- 管理员通用编辑器弹窗 (#editor-dialog) ---------- */
 let activeEditorContext = null;
 
-function openEditorModal(type, targetId = null, focusField = null, presetDefaults = {}, extraContext = {}) {
+function openEditorModal(type, targetId = null, focusField = null, presetDefaults = {}) {
   if (authState.mode !== "admin") {
     openAuthModal();
     return;
@@ -2833,13 +2839,15 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
   const saveBtn = $("#editor-save-btn");
   if (!dialog || !bodyEl) return;
 
-  activeEditorContext = { type, targetId, ...extraContext };
+  activeEditorContext = { type, targetId };
   footLeft.innerHTML = "";
   if (saveBtn) {
     saveBtn.style.display = "";
     const labelEl = $("span", saveBtn);
     if (labelEl) labelEl.textContent = "保存修改";
   }
+  const closeBtn = $(".modal-foot .button-ghost", dialog);
+  if (closeBtn) closeBtn.textContent = "取消";
   if (typeof stopHomeCarousel === "function") stopHomeCarousel();
 
   if (type === "home-hero") {
@@ -3294,20 +3302,6 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
 
     wireImageUploadControls(bodyEl);
 
-    const queue = activeEditorContext.queue || [];
-    if (queue.length) {
-      const totalLeft = queue.length;
-      kickerEl.textContent = `ARCHIVE 03 // BATCH FILL · 还剩 ${totalLeft} 张待填`;
-      if (saveBtn) {
-        const labelEl = $("span", saveBtn);
-        if (labelEl) labelEl.textContent = `保存并填下一张（还剩 ${totalLeft} 张）`;
-      }
-      bodyEl.insertAdjacentHTML(
-        "afterbegin",
-        `<div class="batch-queue-hint">批量导入的第 ${activeEditorContext.queueIndex || 1} / ${activeEditorContext.queueTotal || totalLeft + 1} 张 · 填完点右下角直接跳下一张。</div>`
-      );
-    }
-
     if (!isNew && DATA.gallery.length > 1) {
       footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">${icon("trash")}<span>删除此分镜</span></button>`;
       $("#delete-entity-btn", footLeft)?.addEventListener("click", () => {
@@ -3321,6 +3315,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
     kickerEl.textContent = "ARCHIVE 03 // BATCH IMAGE IMPORT";
     titleEl.textContent = "批量导入插画原图";
     if (saveBtn) saveBtn.style.display = "none";
+    if (closeBtn) closeBtn.textContent = "关闭";
 
     const emptyCount = DATA.gallery.filter(g => !g.src || !String(g.src).trim()).length;
     const batchState = { mode: emptyCount > 0 ? "fill" : "append" };
@@ -3369,7 +3364,6 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
     const listWrap = $("[data-batch-list]", bodyEl);
     const barEl = $("[data-batch-bar]", bodyEl);
     const statusEl = $("[data-batch-status]", bodyEl);
-    let importedIds = [];
     let running = false;
 
     const setMode = next => {
@@ -3392,7 +3386,6 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       const files = Array.from(fileList || []);
       if (!files.length) return;
       running = true;
-      importedIds = [];
       listWrap.innerHTML = "";
       progressWrap.hidden = false;
       resultWrap.hidden = true;
@@ -3418,7 +3411,6 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         return;
       }
 
-      importedIds = outcome.items.map(it => it.id);
       const failedUpload = outcome.items.find(it => it.offline);
       const offlineNote = failedUpload
         ? `<p class="batch-note">有图片没传到云端（${escapeHtml(failedUpload.uploadError || "网络问题")}），先作为本机内嵌图存着；确认联网和口令后重新保存一次就会换成云端链接。</p>`
@@ -3446,13 +3438,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
 
       saveSiteData(`已批量导入 ${outcome.ok} 张插画`);
 
-      footLeft.innerHTML = `<button class="admin-tool-btn is-gold" type="button" id="batch-fill-btn">${icon("edit")}<span>开始逐张填信息（${importedIds.length} 张）</span></button>`;
-      $("#batch-fill-btn", footLeft)?.addEventListener("click", () => {
-        const queue = importedIds.slice();
-        const first = queue.shift();
-        if (!first) return;
-        openEditorModal("gallery", first, null, {}, { queue, queueIndex: 1, queueTotal: importedIds.length });
-      });
+      footLeft.innerHTML = `<span class="batch-foot-hint">关掉这个窗口，点每张图右上角的「编辑分镜」就能逐张填标题、角色和故事。</span>`;
     };
 
     fileInput?.addEventListener("change", () => {
@@ -3906,25 +3892,13 @@ function handleEditorFormSubmit(e) {
     }
     saveSiteData(`「${newsObj.title}」已保存`);
   } else if (type === "gallery") {
-    const { galObj, isNew, queue } = activeEditorContext;
+    const { galObj, isNew } = activeEditorContext;
     applyGalleryFormFields(galObj);
 
     if (isNew) {
       DATA.gallery.push(galObj);
     }
     saveSiteData(`画廊分镜「${galObj.title}」已保存并同步关联角色档案`);
-
-    if (queue && queue.length) {
-      const nextQueue = queue.slice();
-      const nextId = nextQueue.shift();
-      const nextIndex = (activeEditorContext.queueIndex || 1) + 1;
-      openEditorModal("gallery", nextId, null, {}, {
-        queue: nextQueue,
-        queueIndex: nextIndex,
-        queueTotal: activeEditorContext.queueTotal || nextIndex
-      });
-      return;
-    }
   } else if (type === "gallery-batch") {
     showToast("批量导入不需要点保存，图片已经在画廊里了");
     return;
