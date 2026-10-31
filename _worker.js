@@ -165,21 +165,39 @@ async function handleNetease(url) {
 }
 
 /**
- * 音频托管：直接复用已绑定的 KV（CHIRAKA_CONTENT），不额外开存储服务。
- *   POST /api/audio   上传（需 x-chiraka-pass）
+ * 媒体托管：直接复用已绑定的 KV（CHIRAKA_CONTENT），不额外开存储服务。
+ *   POST /api/audio | /api/image   上传（需 x-chiraka-pass）
  *   GET  /api/audio/<key>  播放，自己按 Range 切片，所以能拖进度条
+ *   GET  /api/image/<key>  直出图片，长缓存
  */
-const AUDIO_PREFIX = "audio/";
-const AUDIO_MAX_BYTES = 20 * 1024 * 1024;
+const BLOB_KINDS = {
+  audio: {
+    prefix: "audio/",
+    maxBytes: 20 * 1024 * 1024,
+    defaultType: "audio/mpeg",
+    emptyError: "没有收到音频文件",
+    sizeError: "单个音频请控制在 20MB 以内（约 20 分钟 mp3）"
+  },
+  image: {
+    prefix: "image/",
+    maxBytes: 12 * 1024 * 1024,
+    defaultType: "image/jpeg",
+    emptyError: "没有收到图片文件",
+    sizeError: "单张图片请控制在 12MB 以内"
+  }
+};
 
-async function handleAudio(path, request, env) {
+async function handleBlob(kind, path, request, env) {
+  const conf = BLOB_KINDS[kind];
+  if (!conf) return json({ ok: false, error: "未知的媒体类型" }, 404);
+  const apiBase = `/api/${kind}/`;
   const kv = env.CHIRAKA_CONTENT;
   if (!kv) return json({ ok: false, error: "存储未配置" }, 503);
 
   if (request.method === "GET" || request.method === "HEAD") {
-    const rawKey = decodeURIComponent(path.slice("/api/audio/".length));
+    const rawKey = decodeURIComponent(path.slice(apiBase.length));
     if (!rawKey) return json({ ok: false, error: "缺少文件 key" }, 400);
-    const key = rawKey.startsWith(AUDIO_PREFIX) ? rawKey : AUDIO_PREFIX + rawKey;
+    const key = rawKey.startsWith(conf.prefix) ? rawKey : conf.prefix + rawKey;
 
     const got = await kv.getWithMetadata(key, "arrayBuffer");
     if (!got || !got.value) return new Response("Not found", { status: 404 });
@@ -187,7 +205,7 @@ async function handleAudio(path, request, env) {
     const buf = got.value;
     const total = buf.byteLength;
     const meta = got.metadata || {};
-    const type = meta.contentType || "audio/mpeg";
+    const type = meta.contentType || conf.defaultType;
     const baseHeaders = {
       "content-type": type,
       "cache-control": "public, max-age=31536000, immutable",
@@ -236,13 +254,13 @@ async function handleAudio(path, request, env) {
 
     const contentType = request.headers.get("content-type") || "";
     let bytes;
-    let filename = "audio.mp3";
-    let type = "audio/mpeg";
+    let filename = kind === "image" ? "art.jpg" : "audio.mp3";
+    let type = conf.defaultType;
 
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
       const file = form.get("file");
-      if (!file || typeof file === "string") return json({ ok: false, error: "没有收到音频文件" }, 400);
+      if (!file || typeof file === "string") return json({ ok: false, error: conf.emptyError }, 400);
       filename = file.name || filename;
       type = file.type || type;
       bytes = await file.arrayBuffer();
@@ -253,20 +271,28 @@ async function handleAudio(path, request, env) {
     }
 
     if (!bytes || bytes.byteLength === 0) return json({ ok: false, error: "文件是空的" }, 400);
-    if (bytes.byteLength > AUDIO_MAX_BYTES) {
-      return json({ ok: false, error: "单个音频请控制在 20MB 以内（约 20 分钟 mp3）" }, 413);
+    if (bytes.byteLength > conf.maxBytes) {
+      return json({ ok: false, error: conf.sizeError }, 413);
     }
 
     const safeName = filename.replace(/[^\w.\-\u4e00-\u9fa5]+/g, "_").slice(-48);
-    const key = `${AUDIO_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+    const key = `${conf.prefix}${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
     await kv.put(key, bytes, {
       metadata: { contentType: type, size: bytes.byteLength, filename: safeName, uploadedAt: new Date().toISOString() }
     });
 
-    return json({ ok: true, url: `/api/audio/${encodeURIComponent(key.slice(AUDIO_PREFIX.length))}`, key, size: bytes.byteLength });
+    return json({ ok: true, url: `${apiBase}${encodeURIComponent(key.slice(conf.prefix.length))}`, key, size: bytes.byteLength });
   }
 
   return json({ ok: false, error: "method not allowed" }, 405);
+}
+
+function handleAudio(path, request, env) {
+  return handleBlob("audio", path, request, env);
+}
+
+function handleImage(path, request, env) {
+  return handleBlob("image", path, request, env);
 }
 
 const REVALIDATE_TYPES = [
@@ -284,6 +310,7 @@ export default {
     if (path === "/api" || path.startsWith("/api/")) {
       if (path === "/api/netease") return handleNetease(url);
       if (path === "/api/audio" || path.startsWith("/api/audio/")) return handleAudio(path, request, env);
+      if (path === "/api/image" || path.startsWith("/api/image/")) return handleImage(path, request, env);
       return handleApi(path, request, env);
     }
 

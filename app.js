@@ -185,7 +185,7 @@ async function tryLoadFromRemoteServer() {
       safeStorageSet(STORAGE_DATA_KEY, JSON.stringify(DATA));
       const syncEl = $("#admin-sync-indicator");
       if (syncEl) syncEl.textContent = "已连接远程数据接口 · 实时读写分离";
-      setSyncStatus("ok", res.headers.get("x-chiraka-saved-at") || "");
+      setSyncStatus("idle");
       refreshAllViews();
     }
   } catch (e) {
@@ -258,8 +258,9 @@ async function changePasscodeOnServer(oldPass, newPass) {
   }
 }
 
-/* ---------- 保存状态角标：右下角常驻显示同步结果与最近保存时间 ---------- */
+/* ---------- 保存状态小弹窗：保存后浮现几秒自动淡出，不常驻 ---------- */
 const syncStatusState = { el: null };
+const SYNC_HOLD_MS = { saving: 0, ok: 3200, local: 3600, fail: 5200, idle: 0 };
 
 function formatSavedAt(iso) {
   const d = iso ? new Date(iso) : new Date();
@@ -268,7 +269,7 @@ function formatSavedAt(iso) {
   return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-function setSyncStatus(state, iso) {
+function setSyncStatus(state, iso, message) {
   if (!syncStatusState.el) {
     const el = document.createElement("div");
     el.id = "sync-status-pill";
@@ -281,19 +282,37 @@ function setSyncStatus(state, iso) {
   const el = syncStatusState.el;
   const time = iso === undefined ? "" : formatSavedAt(iso);
   const map = {
-    saving: ["is-saving", "⟳ 正在保存到云端…"],
-    ok: ["is-ok", time ? `已保存 · ${time}` : "已保存到云端"],
-    local: ["is-local", "仅保存在本机（未联网）"],
-    fail: ["is-fail", "云端同步失败，本机已保存"],
-    idle: ["is-ok", time ? `最近更新 · ${time}` : ""]
+    saving: ["is-saving", "正在保存到云端…"],
+    ok: ["is-ok", message ? `${message} · ${time}`.replace(/ · $/, "") : (time ? `已保存 · ${time}` : "已保存到云端")],
+    local: ["is-local", message ? `${message}（已存在本机）` : "已保存在本机（未联网）"],
+    fail: ["is-fail", "云端同步失败 · 改动已存在本机（检查网络或口令）"],
+    idle: ["is-ok", message || (time ? `最近更新 · ${time}` : "")]
   };
   const [cls, text] = map[state] || map.idle;
   el.className = `sync-status-pill ${cls}`;
   el.textContent = text;
   el.hidden = !text;
-  if (text) {
-    el.classList.add("is-visible");
-    window.clearTimeout(el._hideTimer);
+  window.clearTimeout(el._hideTimer);
+
+  // 弹窗是顶层元素，常驻层的小提示会被盖住，所以弹窗开着时把它挂进弹窗里
+  const openDialog = document.querySelector("dialog[open]");
+  const host = openDialog || document.body;
+  if (el.parentElement !== host) host.appendChild(el);
+
+  if (!text) {
+    el.classList.remove("is-visible");
+    return;
+  }
+  el.classList.add("is-visible");
+  const hold = SYNC_HOLD_MS[state] === undefined ? 3200 : SYNC_HOLD_MS[state];
+  if (hold > 0) {
+    el._hideTimer = window.setTimeout(() => {
+      el.classList.remove("is-visible");
+      // 弹窗关掉后把提示挪回常驻层，下次保存还能正常显示
+      if (el.parentElement !== document.body && !document.querySelector("dialog[open]")) {
+        document.body.appendChild(el);
+      }
+    }, hold);
   }
 }
 
@@ -348,8 +367,8 @@ function readAudioDuration(file) {
 
 function initSyncIndicator() {
   if (window.location.protocol === "file:") return;
-  const last = safeStorageGet(STORAGE_SAVED_AT_KEY);
-  if (last) setSyncStatus("idle", last);
+  // 打开页面时不常驻显示「已保存」，只在真正保存后浮现几秒
+  setSyncStatus("idle");
 }
 
 function saveSiteData(toastMsg = "") {
@@ -359,14 +378,11 @@ function saveSiteData(toastMsg = "") {
   syncDataToRemoteServer().then(result => {
     if (result && result.ok) {
       if (result.savedAt) safeStorageSet(STORAGE_SAVED_AT_KEY, result.savedAt);
-      setSyncStatus("ok", result.savedAt || "");
-      showToast(toastMsg ? `${toastMsg} · 已同步到云端` : "已保存并同步到云端");
+      setSyncStatus("ok", result.savedAt || "", toastMsg || "");
     } else if (result && result.reason === "offline") {
-      setSyncStatus("local");
-      showToast(toastMsg || "已保存到本机（离线预览未同步）");
+      setSyncStatus("local", undefined, toastMsg || "");
     } else {
-      setSyncStatus("fail");
-      showToast("云端同步失败，改动已存在本机，请检查网络或口令");
+      setSyncStatus("fail", undefined, toastMsg || "");
     }
   });
 }
@@ -2373,7 +2389,8 @@ function renderGallerySection() {
     filterHost.innerHTML = categories.map(([val, lbl]) => `
       <button class="filter-button${val === currentGalleryFilter ? " is-selected" : ""}" type="button" data-gallery-filter="${val}">${lbl}</button>
     `).join("") + `
-      <button class="filter-button admin-only" type="button" id="add-gallery-btn" style="margin-left:auto;border-color:var(--gold);color:var(--gold)">+ 新增画廊分镜</button>
+      <button class="filter-button admin-only" type="button" id="batch-gallery-btn" style="margin-left:auto;border-color:var(--cyan);color:var(--cyan)">${icon("upload")} 批量导入图片</button>
+      <button class="filter-button admin-only" type="button" id="add-gallery-btn" style="border-color:var(--gold);color:var(--gold)">${icon("plus")} 新增画廊分镜</button>
     `;
 
     $$("[data-gallery-filter]", filterHost).forEach(btn => {
@@ -2383,6 +2400,7 @@ function renderGallerySection() {
       });
     });
 
+    $("#batch-gallery-btn", filterHost)?.addEventListener("click", () => openEditorModal("gallery-batch", "__new__"));
     $("#add-gallery-btn", filterHost)?.addEventListener("click", () => openEditorModal("gallery", "__new__"));
   }
 
@@ -2654,10 +2672,154 @@ function wireImageUploadControls(container) {
   });
 }
 
+/* ---------- 批量导入插画：一次拖一批，自动排进画廊，再逐张补信息 ---------- */
+const BATCH_TONE_CYCLE = ["pink", "cyan", "violet", "orange", "mint", "gold"];
+
+function pickSpanByRatio(width, height) {
+  if (!width || !height) return "normal";
+  const ratio = width / height;
+  if (ratio >= 1.45) return "wide";
+  if (ratio <= 0.72) return "tall";
+  return "normal";
+}
+
+function compressImageToBlob(file, maxDim = 1600, quality = 0.86) {
+  return new Promise(resolve => {
+    if (!file || (file.type && !file.type.startsWith("image/"))) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * scale));
+        const height = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          blob => resolve(blob ? { blob, width, height } : null),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+function blobToDataUrl(blob) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || "");
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uploadImageToServer(blob, filename) {
+  const base = (window.CHIRAKA_DATA_CONFIG?.apiEndpoint || "/api/content").replace(/\/content\/?$/, "");
+  const form = new FormData();
+  form.append("file", blob, filename || `art-${Date.now()}.jpg`);
+  try {
+    const res = await window.fetch(`${base}/image`, {
+      method: "POST",
+      headers: { "x-chiraka-pass": authState.getPasscode() },
+      body: form
+    });
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch (err) {}
+    if (res.ok && payload && payload.ok && payload.url) return { ok: true, url: payload.url };
+    return { ok: false, error: (payload && payload.error) || `上传失败（${res.status}）` };
+  } catch (e) {
+    return { ok: false, error: "网络中断" };
+  }
+}
+
+/* 把一批文件写进画廊：优先填现有空白分镜，多出来的追加为新分镜 */
+async function importGalleryBatch(files, mode, hooks = {}) {
+  const report = (done, total, label) => hooks.onProgress && hooks.onProgress(done, total, label);
+  const list = Array.from(files || []).filter(f => f && (!f.type || f.type.startsWith("image/")));
+  if (!list.length) return { ok: 0, fail: [], items: [] };
+
+  const empties = DATA.gallery.filter(g => !g.src || !String(g.src).trim());
+  const useFill = mode !== "append";
+  const results = [];
+
+  for (let i = 0; i < list.length; i += 1) {
+    const file = list[i];
+    report(i, list.length, file.name);
+    const shot = await compressImageToBlob(file);
+    if (!shot) {
+      results.push({ ok: false, name: file.name, error: "不是能读取的图片" });
+      continue;
+    }
+    const up = await uploadImageToServer(shot.blob, file.name);
+    const src = up.ok ? up.url : await blobToDataUrl(shot.blob);
+    if (!src) {
+      results.push({ ok: false, name: file.name, error: "读取失败" });
+      continue;
+    }
+    const span = pickSpanByRatio(shot.width, shot.height);
+    const fillTarget = useFill ? empties[i] : null;
+    let item = fillTarget;
+
+    if (!item) {
+      const nextNum = String(DATA.gallery.length + 1).padStart(2, "0");
+      item = {
+        id: `g-${Date.now().toString(36).slice(-4)}${i}${Math.random().toString(36).slice(2, 4)}`,
+        category: "character",
+        title: `插画分镜 ${nextNum}`,
+        characterId: "",
+        story: "待补充",
+        meta: "待补充",
+        src: "",
+        tone: BATCH_TONE_CYCLE[DATA.gallery.length % BATCH_TONE_CYCLE.length],
+        span
+      };
+      DATA.gallery.push(item);
+    }
+
+    item.src = src;
+    item.span = span;
+    results.push({ ok: true, id: item.id, name: file.name, span, offline: !up.ok, uploadError: up.ok ? "" : up.error });
+  }
+
+  report(list.length, list.length, "");
+  return {
+    ok: results.filter(r => r.ok).length,
+    fail: results.filter(r => !r.ok),
+    items: results.filter(r => r.ok)
+  };
+}
+
+function spanLabel(span) {
+  if (span === "wide") return "宽幅横版";
+  if (span === "tall") return "竖幅立绘";
+  return "标准方形";
+}
+
+function applyGalleryFormFields(galObj) {
+  galObj.title = $("#ed-gal-title")?.value.trim() || galObj.title;
+  galObj.characterId = $("#ed-gal-charid")?.value || "";
+  galObj.category = $("#ed-gal-category")?.value || "character";
+  galObj.span = $("#ed-gal-span")?.value || "normal";
+  galObj.tone = $("#ed-gal-tone")?.value || "pink";
+  galObj.story = $("#ed-gal-story")?.value.trim() || "待补充";
+  galObj.meta = galObj.story;
+  galObj.src = $("#ed-gal-src")?.value.trim() || "";
+}
+
 /* ---------- 管理员通用编辑器弹窗 (#editor-dialog) ---------- */
 let activeEditorContext = null;
 
-function openEditorModal(type, targetId = null, focusField = null, presetDefaults = {}) {
+function openEditorModal(type, targetId = null, focusField = null, presetDefaults = {}, extraContext = {}) {
   if (authState.mode !== "admin") {
     openAuthModal();
     return;
@@ -2668,10 +2830,16 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
   const kickerEl = $("#editor-dialog-kicker");
   const bodyEl = $("#editor-form-body");
   const footLeft = $("#editor-foot-left");
+  const saveBtn = $("#editor-save-btn");
   if (!dialog || !bodyEl) return;
 
-  activeEditorContext = { type, targetId };
+  activeEditorContext = { type, targetId, ...extraContext };
   footLeft.innerHTML = "";
+  if (saveBtn) {
+    saveBtn.style.display = "";
+    const labelEl = $("span", saveBtn);
+    if (labelEl) labelEl.textContent = "保存修改";
+  }
   if (typeof stopHomeCarousel === "function") stopHomeCarousel();
 
   if (type === "home-hero") {
@@ -3126,6 +3294,20 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
 
     wireImageUploadControls(bodyEl);
 
+    const queue = activeEditorContext.queue || [];
+    if (queue.length) {
+      const totalLeft = queue.length;
+      kickerEl.textContent = `ARCHIVE 03 // BATCH FILL · 还剩 ${totalLeft} 张待填`;
+      if (saveBtn) {
+        const labelEl = $("span", saveBtn);
+        if (labelEl) labelEl.textContent = `保存并填下一张（还剩 ${totalLeft} 张）`;
+      }
+      bodyEl.insertAdjacentHTML(
+        "afterbegin",
+        `<div class="batch-queue-hint">批量导入的第 ${activeEditorContext.queueIndex || 1} / ${activeEditorContext.queueTotal || totalLeft + 1} 张 · 填完点右下角直接跳下一张。</div>`
+      );
+    }
+
     if (!isNew && DATA.gallery.length > 1) {
       footLeft.innerHTML = `<button class="admin-tool-btn is-danger" type="button" id="delete-entity-btn">${icon("trash")}<span>删除此分镜</span></button>`;
       $("#delete-entity-btn", footLeft)?.addEventListener("click", () => {
@@ -3135,6 +3317,175 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         saveSiteData(`已删除画廊分镜「${galObj.title}」`);
       });
     }
+  } else if (type === "gallery-batch") {
+    kickerEl.textContent = "ARCHIVE 03 // BATCH IMAGE IMPORT";
+    titleEl.textContent = "批量导入插画原图";
+    if (saveBtn) saveBtn.style.display = "none";
+
+    const emptyCount = DATA.gallery.filter(g => !g.src || !String(g.src).trim()).length;
+    const batchState = { mode: emptyCount > 0 ? "fill" : "append" };
+
+    bodyEl.innerHTML = `
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label>把一批图片拖进来</label>
+          <label class="batch-drop-zone is-dragover-idle" data-batch-drop>
+            <span class="batch-drop-inner">
+              <span class="batch-drop-icon">${icon("upload")}</span>
+              <strong>一次拖一批 / 一次选一批</strong>
+              <small>自动压缩、自动按横竖比例排版位，最后在这里逐张填信息</small>
+            </span>
+            <input type="file" accept="image/*" multiple data-batch-input style="display:none">
+          </label>
+        </div>
+        <div class="form-field span-2">
+          <label>这些图放到哪里</label>
+          <div class="batch-mode">
+            <button type="button" class="batch-mode-btn${batchState.mode === "fill" ? " is-selected" : ""}" data-batch-mode="fill"${emptyCount ? "" : " disabled"}>
+              填入现有空白分镜（${emptyCount} 个空位）
+            </button>
+            <button type="button" class="batch-mode-btn${batchState.mode === "append" ? " is-selected" : ""}" data-batch-mode="append">
+              全部作为新分镜追加
+            </button>
+          </div>
+        </div>
+        <div class="form-field span-2" data-batch-progress hidden>
+          <div class="batch-progress">
+            <div class="batch-progress-bar"><i data-batch-bar></i></div>
+            <small data-batch-status>准备中…</small>
+          </div>
+        </div>
+        <div class="form-field span-2" data-batch-result hidden>
+          <label>已就位的图片</label>
+          <div class="batch-result-list" data-batch-list></div>
+        </div>
+      </div>
+    `;
+
+    const zone = $("[data-batch-drop]", bodyEl);
+    const fileInput = $("[data-batch-input]", bodyEl);
+    const progressWrap = $("[data-batch-progress]", bodyEl);
+    const resultWrap = $("[data-batch-result]", bodyEl);
+    const listWrap = $("[data-batch-list]", bodyEl);
+    const barEl = $("[data-batch-bar]", bodyEl);
+    const statusEl = $("[data-batch-status]", bodyEl);
+    let importedIds = [];
+    let running = false;
+
+    const setMode = next => {
+      batchState.mode = next;
+      $$("[data-batch-mode]", bodyEl).forEach(b => {
+        if (b.disabled) return;
+        b.classList.toggle("is-selected", b.dataset.batchMode === next);
+      });
+    };
+
+    $$("[data-batch-mode]", bodyEl).forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled || running) return;
+        setMode(btn.dataset.batchMode);
+      });
+    });
+
+    const runImport = async fileList => {
+      if (running) return;
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+      running = true;
+      importedIds = [];
+      listWrap.innerHTML = "";
+      progressWrap.hidden = false;
+      resultWrap.hidden = true;
+      if (barEl) barEl.style.width = "0%";
+
+      const outcome = await importGalleryBatch(files, batchState.mode, {
+        onProgress: (done, total, label) => {
+          if (barEl) barEl.style.width = `${Math.round((done / Math.max(total, 1)) * 100)}%`;
+          if (statusEl) {
+            statusEl.textContent = label
+              ? `正在处理 ${done + 1} / ${total}：${label}`
+              : `已完成 ${done} / ${total}`;
+          }
+        }
+      });
+
+      running = false;
+      progressWrap.hidden = true;
+      if (barEl) barEl.style.width = "100%";
+
+      if (!outcome.items.length) {
+        showToast(outcome.fail.length ? `这批图片没导入成功：${outcome.fail[0].error}` : "没有识别到可用图片");
+        return;
+      }
+
+      importedIds = outcome.items.map(it => it.id);
+      const failedUpload = outcome.items.find(it => it.offline);
+      const offlineNote = failedUpload
+        ? `<p class="batch-note">有图片没传到云端（${escapeHtml(failedUpload.uploadError || "网络问题")}），先作为本机内嵌图存着；确认联网和口令后重新保存一次就会换成云端链接。</p>`
+        : "";
+      listWrap.innerHTML =
+        outcome.items
+          .map(it => {
+            const item = DATA.gallery.find(g => g.id === it.id) || {};
+            return `
+              <div class="batch-item">
+                <span class="batch-item-thumb">${artImage(item.src, item.title || "")}</span>
+                <span class="batch-item-meta">
+                  <strong>${escapeHtml(item.title || "插画分镜")}</strong>
+                  <small>${escapeHtml(spanLabel(it.span))} · 已自动排版</small>
+                </span>
+              </div>
+            `;
+          })
+          .join("") + offlineNote;
+      resultWrap.hidden = false;
+
+      if (outcome.fail.length) {
+        showToast(`${outcome.ok} 张已就位，${outcome.fail.length} 张失败（${outcome.fail[0].error}）`);
+      }
+
+      saveSiteData(`已批量导入 ${outcome.ok} 张插画`);
+
+      footLeft.innerHTML = `<button class="admin-tool-btn is-gold" type="button" id="batch-fill-btn">${icon("edit")}<span>开始逐张填信息（${importedIds.length} 张）</span></button>`;
+      $("#batch-fill-btn", footLeft)?.addEventListener("click", () => {
+        const queue = importedIds.slice();
+        const first = queue.shift();
+        if (!first) return;
+        openEditorModal("gallery", first, null, {}, { queue, queueIndex: 1, queueTotal: importedIds.length });
+      });
+    };
+
+    fileInput?.addEventListener("change", () => {
+      runImport(fileInput.files);
+      fileInput.value = "";
+    });
+
+    if (zone) {
+      ["dragenter", "dragover"].forEach(evt => {
+        zone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+          zone.classList.add("is-dragover");
+        });
+      });
+      ["dragleave", "dragend"].forEach(evt => {
+        zone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!zone.contains(e.relatedTarget)) zone.classList.remove("is-dragover");
+        });
+      });
+      zone.addEventListener("drop", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove("is-dragover");
+        const files = Array.from(e.dataTransfer?.files || []);
+        if (files.length) runImport(files);
+      });
+    }
+
+    footLeft.innerHTML = `<span class="batch-foot-hint">拖进来的图会立刻存进画廊，再点进来一张一张填标题、角色和故事。</span>`;
   } else if (type === "stations") {
     kickerEl.textContent = "ARCHIVE 04 // RADIO STATIONS MANAGER";
     titleEl.textContent = "管理与新增城市电台频段";
@@ -3555,20 +3906,28 @@ function handleEditorFormSubmit(e) {
     }
     saveSiteData(`「${newsObj.title}」已保存`);
   } else if (type === "gallery") {
-    const { galObj, isNew } = activeEditorContext;
-    galObj.title = $("#ed-gal-title")?.value.trim() || galObj.title;
-    galObj.characterId = $("#ed-gal-charid")?.value || "";
-    galObj.category = $("#ed-gal-category")?.value || "character";
-    galObj.span = $("#ed-gal-span")?.value || "normal";
-    galObj.tone = $("#ed-gal-tone")?.value || "pink";
-    galObj.story = $("#ed-gal-story")?.value.trim() || "待补充";
-    galObj.meta = galObj.story;
-    galObj.src = $("#ed-gal-src")?.value.trim() || "";
+    const { galObj, isNew, queue } = activeEditorContext;
+    applyGalleryFormFields(galObj);
 
     if (isNew) {
       DATA.gallery.push(galObj);
     }
     saveSiteData(`画廊分镜「${galObj.title}」已保存并同步关联角色档案`);
+
+    if (queue && queue.length) {
+      const nextQueue = queue.slice();
+      const nextId = nextQueue.shift();
+      const nextIndex = (activeEditorContext.queueIndex || 1) + 1;
+      openEditorModal("gallery", nextId, null, {}, {
+        queue: nextQueue,
+        queueIndex: nextIndex,
+        queueTotal: activeEditorContext.queueTotal || nextIndex
+      });
+      return;
+    }
+  } else if (type === "gallery-batch") {
+    showToast("批量导入不需要点保存，图片已经在画廊里了");
+    return;
   } else if (type === "stations") {
     const rows = $$("#ed-stations-list .station-edit-row");
     const updatedStations = rows.map(row => {
