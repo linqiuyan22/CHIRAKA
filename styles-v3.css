@@ -143,6 +143,8 @@ body.page-home {
   font: 700 clamp(72px, 8vw, 124px)/0.88 var(--display);
   letter-spacing: -0.05em;
   color: #fff;
+  /* 标题与右上角星号必须同行：原设计里标题本来就允许溢出正文栏宽 */
+  white-space: nowrap;
   text-shadow:
     4px 4px 0 #140822,
     8px 8px 0 var(--pink),
@@ -155,6 +157,12 @@ body.page-home {
   vertical-align: super;
   margin-left: 4px;
   text-shadow: 0 0 16px rgba(255, 208, 91, 0.9);
+}
+/* 星号图标按原 ✳ 字形的实际墨迹大小收一点，避免比标题还抢眼 */
+.title-spark .icon {
+  width: 0.72em;
+  height: 0.72em;
+  stroke-width: 2.4;
 }
 .intro-script {
   position: relative;
