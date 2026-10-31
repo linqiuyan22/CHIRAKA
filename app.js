@@ -1053,14 +1053,14 @@ function renderFullPlaylist() {
     const stObj = radio.stations.find(s => s.id === track.station);
     const stName = stObj ? stObj.name : (track.station || "FM 88.8");
     const charObj = getCharacterById(track.characterId);
-    const charTag = charObj ? ` · ${icon("link")}${charObj.label}` : "";
+    const charTag = charObj ? ` · ${icon("link")}${escapeHtml(charObj.label)}` : "";
     return `
       <li style="display:flex;align-items:center;gap:6px">
         <button class="full-track${isCurrent ? " is-current" : ""}" style="flex:1" type="button" data-track="${index}" aria-current="${isCurrent ? "true" : "false"}">
           <img class="full-track-thumb" src="${escapeHtml(coverSrc)}" alt="${escapeHtml(track.title)}">
           <span class="full-track-copy">
             <strong>${escapeHtml(track.title)}</strong>
-            <small>${escapeHtml(track.artist)} · ${escapeHtml(stName)} · ${escapeHtml(track.duration || "03:42")}${escapeHtml(charTag)}</small>
+            <small>${escapeHtml(track.artist)} · ${escapeHtml(stName)} · ${escapeHtml(track.duration || "03:42")}${charTag}</small>
           </span>
           <span class="full-track-state${!track.src ? " is-pending-field" : ""}">${escapeHtml(stateLabel)}</span>
           <span class="full-track-rank">${escapeHtml(track.rank || "")}${escapeHtml(track.suit || "")}</span>
