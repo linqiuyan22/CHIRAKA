@@ -2347,6 +2347,22 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   display: none !important;
 }
 
+/* 外链图片挂掉时的占位，别留一块空白 */
+.art-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 132px;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.32);
+  border-radius: 2px;
+  background: rgba(20, 12, 36, 0.7);
+  color: rgba(255, 240, 250, 0.7);
+  font: 700 11.5px/1.4 var(--cn);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
 .batch-drop-zone {
   display: grid;
   place-items: center;

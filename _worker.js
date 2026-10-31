@@ -295,6 +295,126 @@ function handleImage(path, request, env) {
   return handleBlob("image", path, request, env);
 }
 
+/* 内网地址不允许抓取（避免被当成跳板去访问本机/内网） */
+function isBlockedHost(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  if (!h) return true;
+  if (h === "localhost" || h.endsWith(".local") || h.endsWith(".internal") || h.endsWith(".localhost")) return true;
+  if (h === "::1" || h === "[::1]" || h === "0.0.0.0") return true;
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+  if (v4) {
+    const a = Number(v4[1]);
+    const b = Number(v4[2]);
+    if (a === 0 || a === 10 || a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true;
+  }
+  return false;
+}
+
+/**
+ * 外链转存：从别处（画加、图床之类）拖过来的图，抓回来存进自己的 KV。
+ * 这样原站删图、加防盗链、签名过期，站上的图都不会跟着消失。
+ *   POST /api/image-from-url  { url }  需 x-chiraka-pass
+ */
+async function handleImageFromUrl(request, env) {
+  const kv = env.CHIRAKA_CONTENT;
+  if (!kv) return json({ ok: false, error: "存储未配置" }, 503);
+  if (request.method !== "POST") return json({ ok: false, error: "method not allowed" }, 405);
+
+  const gate = await checkPass(request.headers.get("x-chiraka-pass") || "", env);
+  if (!gate.ok) return json({ ok: false, error: gate.reason }, 401);
+
+  const payload = await bodyJson(request);
+  const raw = payload && typeof payload.url === "string" ? payload.url.trim() : "";
+  if (!raw) return json({ ok: false, error: "缺少图片链接" }, 400);
+
+  let target;
+  try {
+    target = new URL(raw);
+  } catch (e) {
+    return json({ ok: false, error: "图片链接格式不对" }, 400);
+  }
+  if (target.protocol !== "http:" && target.protocol !== "https:") {
+    return json({ ok: false, error: "只支持 http / https 图片链接" }, 400);
+  }
+  if (isBlockedHost(target.hostname)) {
+    return json({ ok: false, error: "这个地址不允许抓取" }, 400);
+  }
+
+  let res;
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 12000) : null;
+  try {
+    // 有些原站会挂住不回，用 race 兜底：到点就当作抓不到，别让页面一直转
+    res = await Promise.race([
+      fetch(target.toString(), {
+        headers: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36",
+          accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+        },
+        redirect: "follow",
+        signal: controller ? controller.signal : undefined
+      }).catch(error => ({ __failed: error })),
+      new Promise(resolve => setTimeout(() => resolve({ __timeout: true }), 12000))
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+
+  if (!res || res.__timeout) {
+    return json({ ok: false, error: "抓取超时，原站一直没回应" }, 504);
+  }
+  if (res.__failed) {
+    const aborted = res.__failed && (res.__failed.name === "AbortError" || String(res.__failed).indexOf("abort") >= 0);
+    return json({ ok: false, error: aborted ? "抓取超时，原站一直没回应" : "抓不到这张图，可能原站不让外链" }, 502);
+  }
+
+  if (!res.ok) return json({ ok: false, error: `原站返回 ${res.status}，抓不到图` }, 502);
+
+  const type = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!type.startsWith("image/")) {
+    return json({ ok: false, error: `这个链接不是图片（${type || "未知类型"}）` }, 415);
+  }
+
+  const declared = Number(res.headers.get("content-length") || 0);
+  if (declared && declared > BLOB_KINDS.image.maxBytes) {
+    return json({ ok: false, error: BLOB_KINDS.image.sizeError }, 413);
+  }
+
+  const bytes = await res.arrayBuffer();
+  if (!bytes || !bytes.byteLength) return json({ ok: false, error: "抓回来是空的" }, 502);
+  if (bytes.byteLength > BLOB_KINDS.image.maxBytes) {
+    return json({ ok: false, error: BLOB_KINDS.image.sizeError }, 413);
+  }
+
+  let name = "external";
+  try {
+    const last = decodeURIComponent(target.pathname.split("/").pop() || "");
+    if (last) name = last.replace(/[^\w.\-\u4e00-\u9fa5]+/g, "_").slice(-48) || "external";
+  } catch (e) {}
+  const key = `${BLOB_KINDS.image.prefix}${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${name}`;
+  await kv.put(key, bytes, {
+    metadata: {
+      contentType: type,
+      size: bytes.byteLength,
+      filename: name,
+      sourceUrl: target.toString(),
+      uploadedAt: new Date().toISOString()
+    }
+  });
+
+  return json({
+    ok: true,
+    url: `/api/image/${encodeURIComponent(key.slice(BLOB_KINDS.image.prefix.length))}`,
+    size: bytes.byteLength,
+    contentType: type,
+    sourceUrl: target.toString()
+  });
+}
+
 const REVALIDATE_TYPES = [
   "text/html",
   "text/css",
@@ -309,6 +429,7 @@ export default {
 
     if (path === "/api" || path.startsWith("/api/")) {
       if (path === "/api/netease") return handleNetease(url);
+      if (path === "/api/image-from-url") return handleImageFromUrl(request, env);
       if (path === "/api/audio" || path.startsWith("/api/audio/")) return handleAudio(path, request, env);
       if (path === "/api/image" || path.startsWith("/api/image/")) return handleImage(path, request, env);
       return handleApi(path, request, env);

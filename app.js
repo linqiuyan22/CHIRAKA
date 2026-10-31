@@ -1296,6 +1296,21 @@ function artImage(src, alt) {
   return `<img class="art-img" src="${escapeHtml(resolveImg(src))}" alt="${escapeHtml(alt)}" loading="lazy">`;
 }
 
+/* 外链失效时给个明确提示，而不是留一块空白 */
+document.addEventListener(
+  "error",
+  event => {
+    const img = event.target;
+    if (!img || img.tagName !== "IMG" || !img.classList.contains("art-img")) return;
+    if (img.dataset.brokenHandled) return;
+    const fallback = document.createElement("span");
+    fallback.className = "art-fallback";
+    fallback.textContent = "原图链接失效";
+    if (img.parentElement) img.replaceWith(fallback);
+  },
+  true
+);
+
 function characterCard(character, index) {
   const hasImage = Boolean(character.image);
   const href = window.CHIRAKA_SPA_MODE ? `#character-${character.id}` : `character.html?id=${encodeURIComponent(character.id)}`;
@@ -2608,6 +2623,31 @@ function applyPickedImage(file, inputEl, zoneEl, container) {
   });
 }
 
+/* 外站图片（画加、图床）拖过来只有链接，先转存成站内链接再填进去 */
+function applyPickedImageUrl(url, inputEl, zoneEl) {
+  if (!url || !inputEl) return;
+  showToast("正在把这张图转存到站内…");
+  uploadImageFromUrl(url).then(result => {
+    if (result.ok) {
+      inputEl.value = result.url;
+      if (zoneEl) zoneEl.classList.add("is-has-file");
+      showToast("图片已转存到站内，点【保存修改】即可生效");
+      return;
+    }
+    inputEl.value = url;
+    if (zoneEl) zoneEl.classList.add("is-has-file");
+    showToast(`转存失败（${result.error}），先填了原图链接；如果页面上显示不出来，把图存到本地再拖进来`);
+  });
+}
+
+function applyDroppedSources(data, inputEl, zoneEl, container) {
+  const { files, urls } = readDroppedImageSources(data);
+  if (files.length) return applyPickedImage(files[0], inputEl, zoneEl, container);
+  if (urls.length) return applyPickedImageUrl(urls[0], inputEl, zoneEl);
+  showToast("没识别到图片：网页上的图请拖图片本身，或右键复制图片后再粘贴");
+  return undefined;
+}
+
 function wireImageUploadControls(container) {
   $$("[data-upload-target]", container).forEach(fileInput => {
     fileInput.addEventListener("change", () => {
@@ -2645,9 +2685,24 @@ function wireImageUploadControls(container) {
       e.preventDefault();
       e.stopPropagation();
       setDrag(false);
-      applyPickedImage(e.dataTransfer?.files?.[0], inputEl, zone, container);
+      applyDroppedSources(e.dataTransfer, inputEl, zone, container);
     });
   });
+
+  // 从网页上复制图片（画加之类）后直接 Ctrl+V，填进这张图对应的字段
+  if (container && !container.dataset.pasteGuard) {
+    container.dataset.pasteGuard = "1";
+    container.addEventListener("paste", e => {
+      const imageZones = $$("[data-drop-target]", container);
+      if (imageZones.length !== 1) return;
+      const { files, urls } = readDroppedImageSources(e.clipboardData);
+      if (!files.length && !urls.length) return;
+      e.preventDefault();
+      const targetId = imageZones[0].dataset.dropTarget;
+      const inputEl = $(`#${targetId}`, container);
+      if (inputEl) applyDroppedSources(e.clipboardData, inputEl, imageZones[0], container);
+    });
+  }
 
   // 兜底：文件拖到弹窗其它位置时不跳转离开页面
   if (container && !container.dataset.dropGuard) {
@@ -2689,33 +2744,166 @@ function pickSpanByRatio(width, height) {
   return "normal";
 }
 
-function compressImageToBlob(file, maxDim = 1600, quality = 0.86) {
+function compressImageToBlob(source, maxDim = 1600, quality = 0.86) {
   return new Promise(resolve => {
-    if (!file || (file.type && !file.type.startsWith("image/"))) return resolve(null);
+    const done = img => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      let blob = null;
+      try {
+        canvas.toBlob(b => resolve(b ? { blob: b, width, height } : null), "image/jpeg", quality);
+      } catch (e) {
+        resolve(null);
+      }
+      return blob;
+    };
+
+    if (typeof source === "string") {
+      const img = new Image();
+      img.onload = () => done(img);
+      img.onerror = () => resolve(null);
+      img.src = source;
+      return;
+    }
+
+    if (!source || (source.type && !source.type.startsWith("image/"))) return resolve(null);
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const width = Math.max(1, Math.round(img.width * scale));
-        const height = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          blob => resolve(blob ? { blob, width, height } : null),
-          "image/jpeg",
-          quality
-        );
-      };
+      img.onload = () => done(img);
       img.onerror = () => resolve(null);
       img.src = e.target.result;
     };
     reader.onerror = () => resolve(null);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(source);
   });
+}
+
+/* 从拖拽 / 粘贴里取出图片来源：本地文件 与 外站图片链接（画加、图床等拖过来只有链接没有文件） */
+function readDroppedImageSources(data) {
+  const files = [];
+  const urls = [];
+  if (!data) return { files, urls };
+
+  Array.from(data.files || []).forEach(f => {
+    if (!f) return;
+    if (!f.type || f.type.startsWith("image/")) files.push(f);
+  });
+
+  if (!files.length) {
+    const html = (data.getData && data.getData("text/html")) || "";
+    const uriList = (data.getData && data.getData("text/uri-list")) || "";
+    const plain = (data.getData && data.getData("text/plain")) || "";
+    const candidates = [];
+    const imgTag = /<img[^>]+src\s*=\s*["']([^"']+)["']/i.exec(html);
+    if (imgTag) candidates.push(imgTag[1]);
+    const srcset = /<img[^>]+srcset\s*=\s*["']([^"']+)["']/i.exec(html);
+    if (!imgTag && srcset) candidates.push(srcset[1].split(",")[0].trim().split(" ")[0]);
+    uriList
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith("#"))
+      .forEach(l => candidates.push(l));
+    if (plain.trim()) candidates.push(plain.trim());
+
+    candidates.forEach(raw => {
+      const clean = raw.replace(/^url\(["']?|["']?\)$/g, "").trim();
+      if (/^data:image\//i.test(clean)) urls.push(clean);
+      else if (/^https?:\/\//i.test(clean)) urls.push(clean);
+    });
+  }
+
+  return { files, urls: [...new Set(urls)] };
+}
+
+async function uploadImageFromUrl(url) {
+  const base = (window.CHIRAKA_DATA_CONFIG?.apiEndpoint || "/api/content").replace(/\/content\/?$/, "");
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = controller ? window.setTimeout(() => controller.abort(), 25000) : null;
+  try {
+    const res = await window.fetch(`${base}/image-from-url`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-chiraka-pass": authState.getPasscode() },
+      body: JSON.stringify({ url }),
+      signal: controller ? controller.signal : undefined
+    });
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch (e) {}
+    if (res.ok && payload && payload.ok && payload.url) return { ok: true, url: payload.url };
+    return { ok: false, error: (payload && payload.error) || `转存失败（${res.status}）` };
+  } catch (e) {
+    const timeout = e && (e.name === "AbortError" || String(e).indexOf("abort") >= 0);
+    return { ok: false, error: timeout ? "转存超时" : "网络中断" };
+  } finally {
+    if (timer) window.clearTimeout(timer);
+  }
+}
+
+/* 取图片真实尺寸（用于自动判定宽幅 / 竖幅 / 标准） */
+function measureImageSize(src) {
+  return new Promise(resolve => {
+    if (!src) return resolve({ width: 0, height: 0 });
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth || 0, height: img.naturalHeight || 0 });
+    img.onerror = () => resolve({ width: 0, height: 0 });
+    img.src = src;
+  });
+}
+
+/* 把任意来源（本地文件 / data URL / 外站链接）变成站内可用的图片地址 */
+async function resolveImageSource(source) {
+  const isUrl = typeof source === "string";
+  if (!isUrl) {
+    const shot = await compressImageToBlob(source);
+    if (!shot) return { ok: false, error: "不是能读取的图片" };
+    const up = await uploadImageToServer(shot.blob, source.name);
+    return {
+      ok: true,
+      src: up.ok ? up.url : await blobToDataUrl(shot.blob),
+      width: shot.width,
+      height: shot.height,
+      stored: up.ok,
+      uploadError: up.ok ? "" : up.error
+    };
+  }
+
+  if (/^data:image\//i.test(source)) {
+    const shot = await compressImageToBlob(source);
+    if (!shot) return { ok: false, error: "剪贴板里的图片读不出来" };
+    const up = await uploadImageToServer(shot.blob, `paste-${Date.now()}.jpg`);
+    return {
+      ok: true,
+      src: up.ok ? up.url : await blobToDataUrl(shot.blob),
+      width: shot.width,
+      height: shot.height,
+      stored: up.ok,
+      uploadError: up.ok ? "" : up.error
+    };
+  }
+
+  const moved = await uploadImageFromUrl(source);
+  if (moved.ok) {
+    const size = await measureImageSize(moved.url);
+    return { ok: true, src: moved.url, width: size.width, height: size.height, stored: true, uploadError: "" };
+  }
+  const size = await measureImageSize(source);
+  return {
+    ok: true,
+    src: source,
+    width: size.width,
+    height: size.height,
+    stored: false,
+    external: true,
+    uploadError: moved.error
+  };
 }
 
 function blobToDataUrl(blob) {
@@ -2748,10 +2936,14 @@ async function uploadImageToServer(blob, filename) {
   }
 }
 
-/* 把一批文件写进画廊：优先填现有空白分镜，多出来的追加为新分镜 */
-async function importGalleryBatch(files, mode, hooks = {}) {
+/* 把一批来源（本地文件 / 外站链接）写进画廊：优先填现有空白分镜，多出来的追加为新分镜 */
+async function importGalleryBatch(sources, mode, hooks = {}) {
   const report = (done, total, label) => hooks.onProgress && hooks.onProgress(done, total, label);
-  const list = Array.from(files || []).filter(f => f && (!f.type || f.type.startsWith("image/")));
+  const list = Array.from(sources || []).filter(item => {
+    if (!item) return false;
+    if (typeof item === "string") return /^https?:\/\//i.test(item) || /^data:image\//i.test(item);
+    return !item.type || item.type.startsWith("image/");
+  });
   if (!list.length) return { ok: 0, fail: [], items: [] };
 
   const empties = DATA.gallery.filter(g => !g.src || !String(g.src).trim());
@@ -2759,20 +2951,17 @@ async function importGalleryBatch(files, mode, hooks = {}) {
   const results = [];
 
   for (let i = 0; i < list.length; i += 1) {
-    const file = list[i];
-    report(i, list.length, file.name);
-    const shot = await compressImageToBlob(file);
-    if (!shot) {
-      results.push({ ok: false, name: file.name, error: "不是能读取的图片" });
+    const source = list[i];
+    const label = typeof source === "string" ? "外站图片链接" : source.name;
+    report(i, list.length, label);
+
+    const resolved = await resolveImageSource(source);
+    if (!resolved.ok) {
+      results.push({ ok: false, name: label, error: resolved.error });
       continue;
     }
-    const up = await uploadImageToServer(shot.blob, file.name);
-    const src = up.ok ? up.url : await blobToDataUrl(shot.blob);
-    if (!src) {
-      results.push({ ok: false, name: file.name, error: "读取失败" });
-      continue;
-    }
-    const span = pickSpanByRatio(shot.width, shot.height);
+
+    const span = pickSpanByRatio(resolved.width, resolved.height);
     const fillTarget = useFill ? empties[i] : null;
     let item = fillTarget;
 
@@ -2792,9 +2981,17 @@ async function importGalleryBatch(files, mode, hooks = {}) {
       DATA.gallery.push(item);
     }
 
-    item.src = src;
+    item.src = resolved.src;
     item.span = span;
-    results.push({ ok: true, id: item.id, name: file.name, span, offline: !up.ok, uploadError: up.ok ? "" : up.error });
+    results.push({
+      ok: true,
+      id: item.id,
+      name: label,
+      span,
+      offline: !resolved.stored,
+      external: Boolean(resolved.external),
+      uploadError: resolved.uploadError || ""
+    });
   }
 
   report(list.length, list.length, "");
@@ -3328,7 +3525,7 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
             <span class="batch-drop-inner">
               <span class="batch-drop-icon">${icon("upload")}</span>
               <strong>一次拖一批 / 一次选一批</strong>
-              <small>自动压缩、自动按横竖比例排版位，最后在这里逐张填信息</small>
+              <small>本地图片、网页上的图（画加之类）拖过来，或者直接 Ctrl+V 粘贴都行 · 自动压缩、自动排版位</small>
             </span>
             <input type="file" accept="image/*" multiple data-batch-input style="display:none">
           </label>
@@ -3381,17 +3578,20 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       });
     });
 
-    const runImport = async fileList => {
+    const runImport = async sourceList => {
       if (running) return;
-      const files = Array.from(fileList || []);
-      if (!files.length) return;
+      const sources = Array.from(sourceList || []).filter(Boolean);
+      if (!sources.length) {
+        showToast("没识别到图片：本地图片直接拖，网页上的图可以拖图或 Ctrl+V 粘贴");
+        return;
+      }
       running = true;
       listWrap.innerHTML = "";
       progressWrap.hidden = false;
       resultWrap.hidden = true;
       if (barEl) barEl.style.width = "0%";
 
-      const outcome = await importGalleryBatch(files, batchState.mode, {
+      const outcome = await importGalleryBatch(sources, batchState.mode, {
         onProgress: (done, total, label) => {
           if (barEl) barEl.style.width = `${Math.round((done / Math.max(total, 1)) * 100)}%`;
           if (statusEl) {
@@ -3413,7 +3613,9 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
 
       const failedUpload = outcome.items.find(it => it.offline);
       const offlineNote = failedUpload
-        ? `<p class="batch-note">有图片没传到云端（${escapeHtml(failedUpload.uploadError || "网络问题")}），先作为本机内嵌图存着；确认联网和口令后重新保存一次就会换成云端链接。</p>`
+        ? `<p class="batch-note">${failedUpload.external
+            ? `有 ${outcome.items.filter(it => it.external).length} 张转存失败（${escapeHtml(failedUpload.uploadError || "原站不让抓取")}），先挂着原图链接。要是画面上显示不出来，把图存到本地再拖一次就行。`
+            : `有图片没传到云端（${escapeHtml(failedUpload.uploadError || "网络问题")}），先作为本机内嵌图存着；确认联网和口令后重新保存一次就会换成云端链接。`}</p>`
         : "";
       listWrap.innerHTML =
         outcome.items
@@ -3446,6 +3648,14 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
       fileInput.value = "";
     });
 
+    const handleDropLike = data => {
+      const { files, urls } = readDroppedImageSources(data);
+      if (files.length) return runImport(files);
+      if (urls.length) return runImport(urls);
+      showToast("没识别到图片：网页上的图请拖图片本身，别拖周围的文字或空白");
+      return undefined;
+    };
+
     if (zone) {
       ["dragenter", "dragover"].forEach(evt => {
         zone.addEventListener(evt, e => {
@@ -3466,10 +3676,17 @@ function openEditorModal(type, targetId = null, focusField = null, presetDefault
         e.preventDefault();
         e.stopPropagation();
         zone.classList.remove("is-dragover");
-        const files = Array.from(e.dataTransfer?.files || []);
-        if (files.length) runImport(files);
+        handleDropLike(e.dataTransfer);
       });
     }
+
+    // 从网页上「复制图片」后直接 Ctrl+V
+    bodyEl.addEventListener("paste", e => {
+      const { files, urls } = readDroppedImageSources(e.clipboardData);
+      if (!files.length && !urls.length) return;
+      e.preventDefault();
+      handleDropLike(e.clipboardData);
+    });
 
     footLeft.innerHTML = `<span class="batch-foot-hint">拖进来的图会立刻存进画廊，再点进来一张一张填标题、角色和故事。</span>`;
   } else if (type === "stations") {
